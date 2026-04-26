@@ -3,61 +3,53 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from database.db import STATUS_OPTIONS, get_all_analyses, update_case
+from database.db import DECISION_OPTIONS, STATUS_OPTIONS, get_all_analyses, update_case
 from utils.export import to_csv_bytes
-from utils.ui import render_banner, section_banner
-
-DECISIONS = ["Pendente", "Monitorar", "Investigar", "Bloquear", "Falso positivo", "Escalado para incidente"]
+from utils.ui import render_empty_state, render_header
 
 
-def render() -> None:
-    render_banner()
-    section_banner("Central de Casos", "📁")
-
+def render(secrets: dict) -> None:
+    render_header("Casos", "Central operacional de triagem e acompanhamento", "📁")
     df = pd.DataFrame(get_all_analyses())
     if df.empty:
-        st.info("Nenhum caso disponível.")
+        render_empty_state("Nenhum caso aberto no momento", "Use Analisar IOC para criar o primeiro caso.")
         return
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    q = c1.text_input("Buscar IOC")
-    risk = c2.selectbox("Risco", ["Todos"] + sorted(df["risk_level"].dropna().unique().tolist()))
+    c1, c2, c3 = st.columns(3)
+    q = c1.text_input("Buscar IOC/Case ID")
+    risk = c2.selectbox("Risco", ["Todos", "Crítico", "Alto", "Médio", "Baixo"])
     status = c3.selectbox("Status", ["Todos"] + STATUS_OPTIONS)
-    ioc_type = c4.selectbox("Tipo", ["Todos"] + sorted(df["ioc_type"].dropna().unique().tolist()))
-    date_filter = c5.date_input("Data", value=None)
 
-    filtered = df.copy()
+    flt = df.copy()
     if q:
-        filtered = filtered[filtered["ioc"].str.contains(q, case=False, na=False)]
+        flt = flt[flt["ioc"].str.contains(q, case=False, na=False) | flt["case_id"].str.contains(q, case=False, na=False)]
     if risk != "Todos":
-        filtered = filtered[filtered["risk_level"] == risk]
+        flt = flt[flt["risk_level"] == risk]
     if status != "Todos":
-        filtered = filtered[filtered["case_status"] == status]
-    if ioc_type != "Todos":
-        filtered = filtered[filtered["ioc_type"] == ioc_type]
-    if date_filter:
-        filtered = filtered[filtered["updated_at"].str.startswith(str(date_filter))]
+        flt = flt[flt["case_status"] == status]
 
     st.dataframe(
-        filtered[["id", "case_id", "ioc", "ioc_type", "risk_level", "confidence_level", "case_status", "analyst_decision", "updated_at"]],
+        flt[["id", "case_id", "ioc", "ioc_type", "risk_level", "confidence_level", "case_status", "analyst_decision", "analyst_notes", "created_at", "updated_at"]],
         use_container_width=True,
     )
 
-    st.markdown("### Editar caso")
-    if not filtered.empty:
-        selected = st.selectbox("ID da análise", filtered["id"].tolist())
-        row = filtered[filtered["id"] == selected].iloc[0]
-        new_status = st.selectbox("Novo status", STATUS_OPTIONS, index=STATUS_OPTIONS.index(row["case_status"]))
-        new_decision = st.selectbox("Nova decisão", DECISIONS, index=DECISIONS.index(row["analyst_decision"]))
-        notes = st.text_area("Notas do analista", value=row.get("analyst_notes", ""))
-        if st.button("Atualizar caso", type="primary"):
-            update_case(int(selected), new_status, new_decision, notes)
-            st.success("Caso atualizado com sucesso.")
-            st.rerun()
+    if flt.empty:
+        render_empty_state("Sem casos para os filtros", "Ajuste filtros para visualizar casos.")
+        return
 
-    st.download_button(
-        "Exportar casos CSV",
-        data=to_csv_bytes(filtered.to_dict(orient="records")),
-        file_name="threatlens_cases.csv",
-        mime="text/csv",
-    )
+    selected = st.selectbox("Selecionar ID para atualizar", flt["id"].tolist())
+    row = flt[flt["id"] == selected].iloc[0]
+    s1, s2 = st.columns(2)
+    new_status = s1.selectbox("Status do caso", STATUS_OPTIONS, index=STATUS_OPTIONS.index(row["case_status"]))
+    new_decision = s2.selectbox("Decisão", DECISION_OPTIONS, index=DECISION_OPTIONS.index(row["analyst_decision"]))
+    notes = st.text_area("Notas", value=row.get("analyst_notes", ""))
+    a1, a2 = st.columns(2)
+    if a1.button("Atualizar caso", type="primary"):
+        update_case(int(selected), new_status, new_decision, notes)
+        st.success("Caso atualizado com sucesso.")
+        st.rerun()
+    if a2.button("Abrir detalhe"):
+        st.session_state["selected_analysis_id"] = int(selected)
+        st.rerun()
+
+    st.download_button("Exportar casos CSV", data=to_csv_bytes(flt.to_dict(orient="records")), file_name="casos.csv", mime="text/csv")

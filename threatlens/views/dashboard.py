@@ -6,90 +6,75 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from database.db import get_all_analyses, seed_demo_data
-from utils.ui import metric_card, render_banner, section_banner
+from database.db import get_all_analyses, get_dashboard_stats, seed_demo_data
+from utils.ui import render_empty_state, render_header, render_metric_card, render_section_title
 
 
-def _active_sources(df: pd.DataFrame) -> int:
-    active = set()
-    for raw in df["sources_json"].fillna("{}").tolist():
-        try:
-            data = json.loads(raw)
-            for source, status in data.items():
-                if status == "Consultado":
-                    active.add(source)
-        except Exception:
-            continue
-    return len(active)
+def render(secrets: dict) -> None:
+    render_header("ThreatLens SOC Console", "IOC enrichment and threat triage", "📊")
 
-
-def render() -> None:
-    render_banner()
-    section_banner("ThreatLens Dashboard - SOC Overview", "📊")
-
-    top_l, top_r = st.columns([3, 1])
-    with top_r:
-        if st.button("Carregar modo demo"):
+    toolbar1, toolbar2 = st.columns([4, 1])
+    with toolbar1:
+        query = st.text_input("", placeholder="Buscar IOC, domínio, IP, hash ou caso...", label_visibility="collapsed")
+    with toolbar2:
+        if st.button("Carregar demo"):
             seed_demo_data()
-            st.success("Dados demo carregados com sucesso.")
+            st.success("Modo demo carregado.")
             st.rerun()
 
     rows = get_all_analyses()
+    if query:
+        rows = [r for r in rows if query.lower() in json.dumps(r, ensure_ascii=False).lower()]
+
     if not rows:
-        with top_l:
-            st.markdown(
-                """
-                <div class='tl-card' style='text-align:center;padding:28px;'>
-                    <h3>Sem análises ainda</h3>
-                    <p>Use <b>Analisar IOC</b> ou carregue o <b>modo demo</b> para visualizar o painel.</p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        render_empty_state("Nenhuma análise encontrada", "Execute uma análise de IOC para começar a popular o histórico.")
         return
 
+    stats = get_dashboard_stats()
+    api_ok = sum(1 for k in ["VIRUSTOTAL_API_KEY", "ABUSEIPDB_API_KEY", "URLHAUS_API_KEY", "IPINFO_API_KEY"] if secrets.get(k))
+    mode = "Demo" if any("TL-DEMO" in r.get("case_id", "") for r in rows) else "Produção local"
+    st.caption(f"Fontes ativas: {stats['active_sources']} • Modo: {mode} • API status: {api_ok}/4 • Última atualização: {stats['last_analysis']}")
+
+    cols = st.columns(4)
+    with cols[0]: render_metric_card("Total de IOCs", str(stats["total"]), "📌")
+    with cols[1]: render_metric_card("Casos abertos", str(stats["open_cases"]), "📁")
+    with cols[2]: render_metric_card("Risco crítico", str(stats["risk"].get("Crítico", 0)), "🚨")
+    with cols[3]: render_metric_card("Risco alto", str(stats["risk"].get("Alto", 0)), "⚠️")
+
+    cols2 = st.columns(4)
+    with cols2[0]: render_metric_card("Risco médio", str(stats["risk"].get("Médio", 0)), "🟠")
+    with cols2[1]: render_metric_card("Risco baixo", str(stats["risk"].get("Baixo", 0)), "🟢")
+    with cols2[2]: render_metric_card("Fontes ativas", str(stats["active_sources"]), "🛰️")
+    with cols2[3]: render_metric_card("Última análise", stats["last_analysis"], "🕒")
+
     df = pd.DataFrame(rows)
-    last_analysis = df.iloc[0]["updated_at"] if not df.empty else "-"
-    open_cases = int(df[~df["case_status"].isin(["Encerrado", "Falso positivo"])].shape[0])
+    risk_df = pd.DataFrame(list(stats["risk"].items()), columns=["Risco", "Quantidade"])
+    type_df = pd.DataFrame(list(stats["types"].items()), columns=["Tipo", "Quantidade"])
+    status_df = pd.DataFrame(list(stats["status"].items()), columns=["Status", "Quantidade"])
 
-    r1 = st.columns(4)
-    with r1[0]:
-        metric_card("Total de IOCs", str(len(df)))
-    with r1[1]:
-        metric_card("Casos abertos", str(open_cases))
-    with r1[2]:
-        metric_card("Críticos", str((df["risk_level"] == "Crítico").sum()))
-    with r1[3]:
-        metric_card("Altos", str((df["risk_level"] == "Alto").sum()))
+    st.markdown("Resumo visual de severidade, tipo e status dos casos.")
+    g1, g2, g3 = st.columns(3)
+    g1.plotly_chart(px.bar(risk_df, x="Risco", y="Quantidade", color="Risco", title="Distribuição por risco"), use_container_width=True)
+    g2.plotly_chart(px.bar(type_df, x="Tipo", y="Quantidade", color="Tipo", title="Distribuição por tipo de IOC"), use_container_width=True)
+    g3.plotly_chart(px.bar(status_df, x="Status", y="Quantidade", color="Status", title="Distribuição por status"), use_container_width=True)
 
-    r2 = st.columns(4)
-    with r2[0]:
-        metric_card("Médios", str((df["risk_level"] == "Médio").sum()))
-    with r2[1]:
-        metric_card("Baixos", str((df["risk_level"] == "Baixo").sum()))
-    with r2[2]:
-        metric_card("Última análise", str(last_analysis))
-    with r2[3]:
-        metric_card("Fontes ativas", str(_active_sources(df)))
+    evo = df.copy()
+    evo["data"] = evo["updated_at"].str.slice(0, 10)
+    evo_df = evo.groupby("data", as_index=False).size().rename(columns={"size": "Quantidade"})
+    st.plotly_chart(px.line(evo_df, x="data", y="Quantidade", markers=True, title="Evolução de análises por data"), use_container_width=True)
 
-    risk_counts = df["risk_level"].value_counts().reindex(["Baixo", "Médio", "Alto", "Crítico"], fill_value=0).reset_index()
-    risk_counts.columns = ["Risco", "Quantidade"]
+    render_section_title("Últimos IOCs analisados")
+    preview = df[["id", "ioc", "ioc_type", "risk_level", "case_status", "sources_json", "updated_at"]].head(12)
+    preview = preview.rename(columns={"ioc": "IOC", "ioc_type": "Tipo", "risk_level": "Risco", "case_status": "Status", "updated_at": "Última análise", "sources_json": "Fontes"})
+    st.dataframe(preview, use_container_width=True)
 
-    type_counts = df["ioc_type"].replace({"ipv4": "IP", "domain": "Domínio", "url": "URL", "md5": "Hash", "sha1": "Hash", "sha256": "Hash"}).value_counts().reset_index()
-    type_counts.columns = ["Tipo", "Quantidade"]
-
-    status_counts = df["case_status"].value_counts().reset_index()
-    status_counts.columns = ["Status", "Quantidade"]
-
-    c1, c2, c3 = st.columns(3)
-    c1.plotly_chart(px.bar(risk_counts, x="Risco", y="Quantidade", color="Risco", title="Distribuição por risco"), use_container_width=True)
-    c2.plotly_chart(px.bar(type_counts, x="Tipo", y="Quantidade", color="Tipo", title="Distribuição por tipo"), use_container_width=True)
-    c3.plotly_chart(px.bar(status_counts, x="Status", y="Quantidade", color="Status", title="Distribuição por status"), use_container_width=True)
-
-    st.markdown("### Últimos casos criados")
-    st.dataframe(
-        df[["case_id", "updated_at", "ioc", "ioc_type", "score", "risk_level", "confidence_level", "case_status"]]
-        .rename(columns={"case_id": "Case ID", "updated_at": "Data", "ioc": "IOC", "ioc_type": "Tipo", "score": "Score", "risk_level": "Risco", "confidence_level": "Confiança", "case_status": "Status"})
-        .head(10),
-        use_container_width=True,
-    )
+    actions = st.columns(3)
+    ids = df["id"].head(20).tolist()
+    sel = actions[0].selectbox("Selecionar análise", ids)
+    if actions[1].button("Ver análise"):
+        st.session_state["selected_analysis_id"] = int(sel)
+        st.rerun()
+    if actions[2].button("Reanalisar"):
+        row = df[df["id"] == sel].iloc[0]
+        st.session_state["reanalyze_ioc"] = row["ioc"]
+        st.success("IOC enviado para tela de análise.")

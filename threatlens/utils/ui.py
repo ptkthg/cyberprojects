@@ -8,64 +8,87 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 ASSETS_DIR = BASE_DIR / "assets"
 
 RISK_STYLES = {
-    "Baixo": ("#065f46", "#34d399"),
+    "Baixo": ("#0b3b5c", "#7dd3fc"),
     "Médio": ("#78350f", "#fbbf24"),
     "Alto": ("#7c2d12", "#fb923c"),
     "Crítico": ("#7f1d1d", "#f87171"),
 }
+STATUS_COLORS = {
+    "Novo": "#38bdf8", "Em análise": "#60a5fa", "Escalado": "#f59e0b", "Resolvido": "#22c55e",
+    "Falso positivo": "#94a3b8", "Monitorado": "#a78bfa", "Bloqueado": "#ef4444",
+}
 
 
-CONFIDENCE_STYLES = {"Baixa": "#64748b", "Média": "#0ea5e9", "Alta": "#22c55e"}
+def render_logo(width: int = 240) -> None:
+    p = ASSETS_DIR / "logo.svg"
+    if p.exists():
+        st.image(str(p), width=width)
 
 
-def render_logo(width: int = 260) -> None:
-    path = ASSETS_DIR / "logo.svg"
-    if path.exists():
-        st.image(str(path), width=width)
+def render_header(title: str, subtitle: str, icon: str = "🛡️") -> None:
+    st.markdown(f"<div class='tl-banner'><h3>{icon} {title}</h3><p style='margin:0;color:#94a3b8'>{subtitle}</p></div>", unsafe_allow_html=True)
 
 
-def render_banner() -> None:
-    path = ASSETS_DIR / "blue_team_banner.svg"
-    if path.exists():
-        st.image(str(path), use_container_width=True)
+def render_section_title(text: str) -> None:
+    st.markdown(f"### {text}")
 
 
-def section_banner(text: str, icon: str = "🛡️") -> None:
-    st.markdown(f"<div class='tl-banner'><b>{icon} {text}</b></div>", unsafe_allow_html=True)
+def render_metric_card(label: str, value: str, icon: str = "📌") -> None:
+    st.markdown(f"<div class='tl-card'><div class='tl-metric'>{icon} {value}</div><div class='tl-label'>{label}</div></div>", unsafe_allow_html=True)
 
 
-def metric_card(label: str, value: str) -> None:
+def render_risk_badge(risk_level: str, score: int = 0) -> None:
+    bg, fg = RISK_STYLES.get(risk_level, ("#334155", "#cbd5e1"))
+    st.markdown(f"<span class='tl-badge' style='background:{bg};color:{fg};'>Risco {risk_level} • {score}/100</span>", unsafe_allow_html=True)
+
+
+def risk_badge(risk_level: str, score: int) -> None:
+    render_risk_badge(risk_level, score)
+
+
+def render_status_badge(status: str) -> None:
+    color = STATUS_COLORS.get(status, "#94a3b8")
+    st.markdown(f"<span class='tl-badge' style='background:#0b1220;color:{color};border:1px solid {color};'>Status {status}</span>", unsafe_allow_html=True)
+
+
+def recommendation_card(text: str) -> None:
+    st.markdown(f"<div class='tl-card'><b>Ações recomendadas</b><p style='margin:.4rem 0'>{text}</p></div>", unsafe_allow_html=True)
+
+
+def render_empty_state(title: str, message: str) -> None:
+    icon = ASSETS_DIR / "empty_state.svg"
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if icon.exists():
+            st.image(str(icon), width=90)
+    with col2:
+        st.markdown(f"<div class='tl-card'><h4>{title}</h4><p>{message}</p></div>", unsafe_allow_html=True)
+
+
+def render_social_links() -> None:
     st.markdown(
-        f"<div class='tl-card'><div class='tl-metric'>{value}</div><div class='tl-label'>{label}</div></div>",
-        unsafe_allow_html=True,
-    )
-
-
-def triage_card(result: dict) -> None:
-    risk_bg, risk_fg = RISK_STYLES.get(result.get("risk_level", "Baixo"), ("#374151", "#d1d5db"))
-    conf_color = CONFIDENCE_STYLES.get(result.get("confidence_level", "Baixa"), "#64748b")
-    st.markdown(
-        f"""
+        """
         <div class='tl-card'>
-            <div style='display:flex; gap:8px; flex-wrap:wrap;'>
-                <span class='tl-badge' style='background:{risk_bg};color:{risk_fg};'>Risco {result.get('risk_level')}</span>
-                <span class='tl-badge' style='background:#0f172a;color:{conf_color};border:1px solid {conf_color};'>Confiança {result.get('confidence_level')}</span>
-                <span class='tl-badge' style='background:#1e293b;color:#93c5fd;'>Tipo {result.get('ioc_type')}</span>
-            </div>
-            <h3 style='margin:8px 0 4px 0;'>IOC: {result.get('ioc')}</h3>
-            <p style='margin:0;'>Case ID: <b>{result.get('case_id','')}</b> • Score <b>{result.get('score')}/100</b></p>
+        <b>Links profissionais</b><br>
+        <a href='[INSERIR_LINK_LINKEDIN]'>LinkedIn</a> •
+        <a href='[INSERIR_LINK_GITHUB]'>GitHub</a> •
+        <a href='[INSERIR_LINK_PORTFOLIO]'>Portfólio</a> •
+        <a href='mailto:[INSERIR_EMAIL_PROFISSIONAL]'>E-mail</a>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def recommendation_card(text: str) -> None:
-    st.markdown(
-        f"<div class='tl-card'><h4>🎯 Recomendação operacional</h4><p>{text}</p></div>",
-        unsafe_allow_html=True,
-    )
-
-
 def render_footer() -> None:
-    st.markdown("<div class='tl-footer'>ThreatLens • IOC Enrichment & Triage Platform • Desenvolvido por Patrick Santos</div>", unsafe_allow_html=True)
+    st.markdown("<div class='tl-footer'>Desenvolvido por Patrick Santos • <a href='[INSERIR_LINK_LINKEDIN]'>LinkedIn</a> • <a href='[INSERIR_LINK_GITHUB]'>GitHub</a> • <a href='[INSERIR_LINK_PORTFOLIO]'>Portfólio</a> • <a href='mailto:[INSERIR_EMAIL_PROFISSIONAL]'>E-mail</a></div>", unsafe_allow_html=True)
+
+
+# backward compatibility helpers
+metric_card = render_metric_card
+triage_card = lambda result: st.markdown(
+    f"<div class='tl-card'><b>{result.get('case_id','')}</b><br>{result.get('ioc')} • {result.get('ioc_type')} • {result.get('confidence_level','Baixa')}</div>",
+    unsafe_allow_html=True,
+)
+section_banner = lambda text, icon="🛡️": render_header(text, "", icon)
+render_banner = lambda: st.image(str(ASSETS_DIR / "dashboard_banner.svg"), use_container_width=True) if (ASSETS_DIR / "dashboard_banner.svg").exists() else None

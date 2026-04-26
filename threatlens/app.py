@@ -8,9 +8,19 @@ from dotenv import load_dotenv
 from database.db import init_db
 from utils.styles import apply_global_styles
 from utils.ui import render_footer, render_logo
-from views import about, analyze, batch, cases, dashboard, history, settings
+from views import about, analysis_detail, analyze, batch, cases, dashboard, history, settings
 
 load_dotenv()
+
+PAGE_MAP = {
+    "📊 Painel": "painel",
+    "🔎 Analisar IOC": "analisar",
+    "📥 Análise em Lote": "lote",
+    "🕒 Histórico": "historico",
+    "📁 Casos": "casos",
+    "⚙️ Configurações": "config",
+    "ℹ️ Sobre": "sobre",
+}
 
 
 def load_secrets() -> dict:
@@ -34,36 +44,33 @@ def main() -> None:
     secrets = load_secrets()
 
     with st.sidebar:
-        render_logo(width=210)
+        render_logo(width=220)
+        st.markdown("**ThreatLens**")
         st.caption("IOC Enrichment & Triage Platform")
-        page = st.radio(
-            "Menu",
-            [
-                "Dashboard",
-                "Analisar IOC",
-                "Análise em lote",
-                "Histórico",
-                "Central de Casos",
-                "Configurações",
-                "Sobre",
-            ],
-            label_visibility="visible",
-        )
+        st.divider()
+        options = list(PAGE_MAP.keys())
+        if st.session_state.get("selected_analysis_id"):
+            options.append("🧾 Detalhe da Análise")
+        selected = st.radio("Navegação", options)
+        st.caption("Desenvolvido por Patrick Santos")
 
-    if page == "Dashboard":
-        dashboard.render()
-    elif page == "Analisar IOC":
+    page = PAGE_MAP.get(selected)
+    if selected == "🧾 Detalhe da Análise":
+        analysis_detail.render(secrets)
+    elif page == "painel":
+        dashboard.render(secrets)
+    elif page == "analisar":
         analyze.render(secrets)
-    elif page == "Análise em lote":
+    elif page == "lote":
         batch.render(secrets)
-    elif page == "Histórico":
-        history.render()
-    elif page == "Central de Casos":
-        cases.render()
-    elif page == "Configurações":
+    elif page == "historico":
+        history.render(secrets)
+    elif page == "casos":
+        cases.render(secrets)
+    elif page == "config":
         settings.render(secrets)
     else:
-        about.render()
+        about.render(secrets)
 
     render_footer()
 
