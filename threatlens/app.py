@@ -6,7 +6,9 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from database.db import init_db
-from pages import about, analyze, batch, dashboard, history, settings
+from utils.styles import apply_global_styles
+from utils.ui import render_footer, render_logo
+from views import about, analyze, batch, dashboard, history, settings
 
 load_dotenv()
 
@@ -27,14 +29,18 @@ def load_secrets() -> dict:
 
 def main() -> None:
     st.set_page_config(page_title="ThreatLens", page_icon="🛡️", layout="wide")
+    apply_global_styles()
     init_db()
     secrets = load_secrets()
 
-    st.sidebar.title("ThreatLens")
-    page = st.sidebar.radio(
-        "Menu",
-        ["Dashboard", "Analisar IOC", "Análise em lote", "Histórico", "Configurações", "Sobre"],
-    )
+    with st.sidebar:
+        render_logo(width=210)
+        st.caption("SOC Blue Team Console")
+        page = st.radio(
+            "Menu",
+            ["Dashboard", "Analisar IOC", "Análise em lote", "Histórico", "Configurações", "Sobre"],
+            label_visibility="visible",
+        )
 
     if page == "Dashboard":
         dashboard.render()
@@ -48,6 +54,8 @@ def main() -> None:
         settings.render(secrets)
     else:
         about.render()
+
+    render_footer()
 
 
 if __name__ == "__main__":

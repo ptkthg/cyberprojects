@@ -5,20 +5,21 @@ import requests
 TIMEOUT = 12
 
 
-def query_urlhaus(ioc: str, ioc_type: str) -> dict:
+def query_urlhaus(ioc: str, ioc_type: str, api_key: str | None = None) -> dict:
     if ioc_type not in {"url", "domain"}:
         return {"status": "Não aplicável", "data": {}, "error": None}
 
     endpoint = "https://urlhaus-api.abuse.ch/v1/url/" if ioc_type == "url" else "https://urlhaus-api.abuse.ch/v1/host/"
     key = "url" if ioc_type == "url" else "host"
+    headers = {"Auth-Key": api_key} if api_key else None
 
     try:
-        response = requests.post(endpoint, data={key: ioc}, timeout=TIMEOUT)
+        response = requests.post(endpoint, data={key: ioc}, headers=headers, timeout=TIMEOUT)
         if response.status_code == 429:
             return {"status": "Erro", "data": {}, "error": "Rate limit excedido"}
         response.raise_for_status()
         payload = response.json()
-        if payload.get("query_status") in {"no_results", "invalid_url"}:
+        if payload.get("query_status") in {"no_results", "invalid_url", "invalid_host"}:
             return {"status": "Sem resultado", "data": {}, "error": None}
 
         urls = payload.get("urls", [])

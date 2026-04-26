@@ -5,7 +5,7 @@ from datetime import datetime
 from core.ioc_detector import detect_ioc_type
 from core.kql_generator import generate_kql
 from core.recommendations import generate_recommendation, generate_summary
-from core.scoring import calculate_risk_score, score_to_risk
+from core.scoring import calculate_risk_score
 from services.abuseipdb import query_abuseipdb
 from services.ipinfo import query_ipinfo
 from services.urlhaus import query_urlhaus
@@ -20,6 +20,7 @@ def analyze_ioc(ioc_raw: str, secrets: dict) -> dict:
             "ioc_type": ioc_type,
             "score": 0,
             "risk_level": "Baixo",
+            "score_breakdown": ["+0 Tipo de IOC não reconhecido"],
             "recommendation": "IOC inválido. Ajuste o indicador e tente novamente.",
             "summary": "Não foi possível identificar o tipo do IOC.",
             "sources": {},
@@ -30,7 +31,7 @@ def analyze_ioc(ioc_raw: str, secrets: dict) -> dict:
 
     vt = query_virustotal(ioc, ioc_type, secrets.get("VIRUSTOTAL_API_KEY"))
     abuse = query_abuseipdb(ioc, ioc_type, secrets.get("ABUSEIPDB_API_KEY"))
-    urlhaus = query_urlhaus(ioc, ioc_type)
+    urlhaus = query_urlhaus(ioc, ioc_type, secrets.get("URLHAUS_API_KEY"))
     ipinfo = query_ipinfo(ioc, ioc_type, secrets.get("IPINFO_API_KEY"))
 
     results = {
@@ -40,8 +41,11 @@ def analyze_ioc(ioc_raw: str, secrets: dict) -> dict:
         "urlhaus": urlhaus,
         "ipinfo": ipinfo,
     }
-    score = calculate_risk_score(results)
-    risk_level = score_to_risk(score)
+
+    score_payload = calculate_risk_score(results)
+    score = score_payload["score"]
+    risk_level = score_payload["risk_level"]
+
     recommendation = generate_recommendation(score, ioc_type, results)
     summary = generate_summary(ioc, ioc_type, score, risk_level, results)
 
@@ -67,13 +71,14 @@ def analyze_ioc(ioc_raw: str, secrets: dict) -> dict:
         "ioc_type": ioc_type,
         "score": score,
         "risk_level": risk_level,
+        "score_breakdown": score_payload["score_breakdown"],
         "recommendation": recommendation,
         "summary": summary,
         "sources": {
-            "virustotal": vt["status"],
-            "abuseipdb": abuse["status"],
-            "urlhaus": urlhaus["status"],
-            "ipinfo": ipinfo["status"],
+            "VirusTotal": vt["status"],
+            "AbuseIPDB": abuse["status"],
+            "URLhaus": urlhaus["status"],
+            "IPinfo": ipinfo["status"],
         },
         "evidence": evidence,
         "kql": generate_kql(ioc, ioc_type),

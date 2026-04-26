@@ -1,39 +1,118 @@
 # ThreatLens - IOC Enrichment & Triage Platform
 
-Aplicativo Streamlit para Blue Team/SOC que detecta tipo de IOC, realiza enriquecimento com fontes públicas de Threat Intelligence, calcula score de risco, gera recomendação operacional, persiste histórico em SQLite e permite exportação em CSV.
+![ThreatLens Banner](assets/blue_team_banner.svg)
 
-## Funcionalidades
+**Desenvolvido por Patrick Santos**
 
-- Detecção automática de IOC:
-  - IPv4
-  - Domínio (incluindo `dominio[.]com`)
-  - URL
-  - Hash MD5, SHA1 e SHA256
-- Enriquecimento de IOC:
-  - VirusTotal (IP, domínio, URL e hash)
-  - AbuseIPDB (IP)
-  - URLhaus (URL e domínio)
-  - IPinfo (opcional para IP)
-- Tratamento resiliente de erros por fonte:
-  - `Consultado`, `Não aplicável`, `Sem API key`, `Erro`, `Sem resultado`
-- Cálculo de score de risco (0-100) e classificação:
-  - Baixo, Médio, Alto, Crítico
-- Recomendação operacional por faixa de risco
-- Geração automática de query KQL para Microsoft Defender Advanced Hunting
-- Histórico local com SQLite
-- Análise em lote por CSV/TXT
-- Dashboard com métricas e gráficos
-- Exportação de resultados/histórico para CSV
+Plataforma de enriquecimento e triagem de IOCs para Blue Team/SOC, com interface Streamlit profissional, histórico local em SQLite, análise individual/lote, score explicável e integração com fontes OSINT.
 
-## Estrutura
+## Principais funcionalidades
+
+- Detecção e normalização de IOC:
+  - IPv4, domínio, URL, MD5, SHA1 e SHA256.
+  - Suporte a formato ofuscado como `dominio[.]com`.
+- Enriquecimento de IOC em múltiplas fontes:
+  - VirusTotal v3
+  - AbuseIPDB
+  - URLhaus
+  - IPinfo (opcional)
+- Score de risco explicável:
+  - score final + breakdown dos motivos da pontuação
+  - classificação Baixo/Médio/Alto/Crítico
+- Recomendação operacional para SOC N1/N2.
+- KQL generator para Microsoft Defender Advanced Hunting.
+- Histórico com filtros e decisão do analista (Pendente, Monitorar, Investigar, Bloquear, Falso positivo, Escalado para incidente).
+- Análise em lote (CSV/TXT) com barra de progresso e tolerância a falhas por IOC.
+- Exportação CSV e relatório HTML.
+- Launcher desktop (Tkinter) para iniciar/parar o ThreatLens sem terminal.
+
+## Prints sugeridos
+
+- Dashboard SOC com métricas e gráficos.
+- Tela de triagem IOC com score breakdown.
+- Histórico com decisão do analista.
+- Launcher desktop em execução.
+
+## Instalação
+
+```bash
+cd threatlens
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+# .venv\Scripts\activate   # Windows
+pip install -r requirements.txt
+```
+
+## Configuração de API keys
+
+Crie `.streamlit/secrets.toml` com:
+
+```toml
+VIRUSTOTAL_API_KEY = ""
+ABUSEIPDB_API_KEY = ""
+URLHAUS_API_KEY = ""
+IPINFO_API_KEY = ""
+```
+
+Também é possível usar `.env` com base em `.env.example`.
+
+> O app funciona parcialmente mesmo sem todas as chaves.
+
+## Executar via Streamlit
+
+```bash
+streamlit run app.py
+```
+
+## Executar via launcher.py (desktop)
+
+```bash
+python launcher.py
+```
+
+Funcionalidades do launcher:
+- Iniciar ThreatLens
+- Abrir no navegador
+- Parar ThreatLens
+- Sair
+- Status de execução
+
+## Executar via arquivo BAT (Windows)
+
+Duplo clique em `abrir_threatlens.bat`.
+
+Fluxo:
+- ativa `.venv` se existir
+- executa `python launcher.py`
+- mantém terminal para visualizar erro
+
+## Gerar executável (PyInstaller)
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --noconsole --name ThreatLens launcher.py
+```
+
+Saída em `dist/ThreatLens.exe`.
+
+## Estrutura do projeto
 
 ```text
 threatlens/
 ├── app.py
+├── launcher.py
+├── abrir_threatlens.bat
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
 ├── .env.example
+├── assets/
+│   ├── logo.svg
+│   ├── shield.svg
+│   ├── radar.svg
+│   ├── network.svg
+│   ├── threat.svg
+│   └── blue_team_banner.svg
 ├── .streamlit/
 │   ├── config.toml
 │   └── secrets.toml.example
@@ -51,7 +130,7 @@ threatlens/
 │   ├── recommendations.py
 │   ├── kql_generator.py
 │   └── normalizer.py
-├── pages/
+├── views/
 │   ├── dashboard.py
 │   ├── analyze.py
 │   ├── batch.py
@@ -60,94 +139,20 @@ threatlens/
 │   └── about.py
 └── utils/
     ├── export.py
+    ├── styles.py
     └── ui.py
 ```
 
-## Requisitos
-
-- Python 3.11+
-
-## Instalação
-
-```bash
-cd threatlens
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows
-pip install -r requirements.txt
-```
-
-## Configuração de API keys
-
-Use **um** dos formatos:
-
-### Opção A: Streamlit secrets (recomendado)
-
-1. Crie o arquivo `.streamlit/secrets.toml`
-2. Copie o conteúdo de `.streamlit/secrets.toml.example`
-3. Preencha as chaves:
-
-```toml
-VIRUSTOTAL_API_KEY = "..."
-ABUSEIPDB_API_KEY = "..."
-IPINFO_API_KEY = "..."
-```
-
-### Opção B: .env
-
-1. Copie `.env.example` para `.env`
-2. Preencha os valores.
-
-> O app funciona parcialmente mesmo sem todas as chaves.
-
-## Execução
-
-```bash
-streamlit run app.py
-```
-
-## Uso
-
-### Tela Dashboard
-Visualize total de análises, distribuição por risco/tipo e últimas análises.
-
-### Tela Analisar IOC
-1. Cole um IOC
-2. Clique em **Analisar IOC**
-3. Veja score, risco, recomendação, fontes e evidências
-4. Exporte o resultado em CSV
-5. Copie a KQL gerada
-
-### Tela Análise em lote
-- Suba CSV com coluna `ioc` ou TXT com um IOC por linha
-- Execute análise e exporte o consolidado
-
-### Tela Histórico
-- Filtre por tipo/risco
-- Busque por IOC
-- Exporte para CSV
-- Limpe histórico com confirmação
-
-## Segurança
-
-- Não há hardcode de API keys
-- Chaves não são exibidas na interface
-- Chaves não são salvas em banco
-- `secrets.toml` é ignorado no Git
-- Chamadas HTTP com timeout
-- Tratamento de exceções sem stack trace para usuário
-- Não executa bloqueio automático em firewall/EDR
-
 ## Limitações
 
-- Dependência de disponibilidade/rate limit das APIs externas
-- Cobertura e contexto variam por fonte
-- Não substitui investigação com telemetria interna
+- Dependência de disponibilidade e rate limit das APIs externas.
+- IOC enrichment não substitui correlação em logs internos.
+- Resultado deve ser usado como apoio à decisão.
 
-## Exemplo rápido de IOC
+## Uso responsável
 
-- IP: `8.8.8.8`
-- Domínio: `example[.]com`
-- URL: `https://example.com/path`
-- MD5: `44d88612fea8a8f36de82e1278abb02f`
+ThreatLens **não realiza bloqueio automático** em firewall/EDR/endpoint. A decisão final é sempre do analista.
 
+---
+
+Desenvolvido por Patrick Santos.

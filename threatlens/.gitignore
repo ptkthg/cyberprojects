@@ -10,4 +10,7 @@ env/
 .env
 threatlens.db
 *.db
+build/
+dist/
+*.spec
 .DS_Store
