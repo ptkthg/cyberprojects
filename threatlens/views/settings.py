@@ -13,34 +13,34 @@ def _status(value: str | None) -> str:
 
 
 def render(secrets: dict) -> None:
-    render_header("Configurações", "Estado de integrações, demo e preferências locais", "⚙️")
+    render_header("Configurações", "Saúde das Fontes e Análise IA", "⚙️")
 
     sources = [
         ("VirusTotal", _status(secrets.get("VIRUSTOTAL_API_KEY"))),
         ("AbuseIPDB", _status(secrets.get("ABUSEIPDB_API_KEY"))),
         ("URLhaus", _status(secrets.get("URLHAUS_API_KEY"))),
         ("IPinfo", _status(secrets.get("IPINFO_API_KEY"))),
+        ("OpenAI", _status(secrets.get("OPENAI_API_KEY"))),
         ("GreyNoise", "Não implementada"),
         ("Shodan", "Não implementada"),
         ("MISP", "Não implementada"),
-        ("AlienVault OTX", "Não implementada"),
-        ("ThreatFox", "Não implementada"),
     ]
-
-    cols = st.columns(3)
-    for idx, (name, status) in enumerate(sources):
-        with cols[idx % 3]:
+    st.markdown("### Saúde das Fontes")
+    cols = st.columns(4)
+    for i, (name, status) in enumerate(sources):
+        with cols[i % 4]:
             render_metric_card(name, status, "🛰️")
+
+    st.markdown("### Análise IA")
+    st.write(f"**OpenAI API:** {_status(secrets.get('OPENAI_API_KEY'))}")
+    st.write("**Modelo usado:** gpt-4.1-mini")
+    st.write(f"**Status:** {'Disponível' if secrets.get('OPENAI_API_KEY') else 'Indisponível'}")
+    st.warning("A análise IA é opcional, auxiliar e deve ser validada pelo analista. Não enviar dados sensíveis.")
+    st.code('OPENAI_API_KEY = ""', language="toml")
 
     st.markdown("### Preferências")
     st.selectbox("Severidade mínima para alerta visual", ["Baixo", "Médio", "Alto", "Crítico"])
     st.selectbox("Formato padrão de exportação", ["CSV", "JSON", "HTML"])
-    st.toggle("Modo demo", value=False)
-    st.toggle("Tema escuro", value=True, disabled=True)
-
-    st.markdown("### Segurança")
-    st.code('VIRUSTOTAL_API_KEY = ""\nABUSEIPDB_API_KEY = ""\nURLHAUS_API_KEY = ""\nIPINFO_API_KEY = ""', language="toml")
-    st.caption("As chaves devem ser configuradas localmente em .streamlit/secrets.toml")
 
     rows = get_all_analyses()
     if not rows:
@@ -49,6 +49,4 @@ def render(secrets: dict) -> None:
         st.download_button("Exportar histórico", data=to_csv_bytes(pd.DataFrame(rows).to_dict(orient="records")), file_name="historico_total.csv", mime="text/csv")
 
     if st.button("Limpar histórico", type="secondary"):
-        clear_history()
-        st.success("Histórico limpo com sucesso.")
-        st.rerun()
+        clear_history(); st.success("Histórico limpo com sucesso."); st.rerun()

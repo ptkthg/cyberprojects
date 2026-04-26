@@ -16,9 +16,11 @@ def render(secrets: dict) -> None:
         return
 
     c1, c2, c3 = st.columns(3)
-    q = c1.text_input("Buscar IOC/Case ID")
-    risk = c2.selectbox("Risco", ["Todos", "Crítico", "Alto", "Médio", "Baixo"])
-    status = c3.selectbox("Status", ["Todos"] + STATUS_OPTIONS)
+    q = c1.text_input("Buscar IOC/Case ID", value=st.session_state.get("case_filter_search", ""))
+    risk_opts=["Todos", "Crítico", "Alto", "Médio", "Baixo"]
+    risk = c2.selectbox("Risco", risk_opts, index=risk_opts.index(st.session_state.get("case_filter_risk", "Todos")) if st.session_state.get("case_filter_risk", "Todos") in risk_opts else 0)
+    st_opts=["Todos"] + STATUS_OPTIONS
+    status = c3.selectbox("Status", st_opts, index=st_opts.index(st.session_state.get("case_filter_status", "Todos")) if st.session_state.get("case_filter_status", "Todos") in st_opts else 0)
 
     flt = df.copy()
     if q:

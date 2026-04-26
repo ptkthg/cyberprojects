@@ -28,14 +28,14 @@ def check_file(path: Path) -> list[str]:
                 continue
             if mod in {"typing", "__future__"}:
                 continue
-            if mod in {"pandas", "streamlit", "plotly.express", "requests", "dotenv"}:
+            if mod in {"pandas", "streamlit", "plotly.express", "requests", "dotenv", "openai"}:
                 continue
             if not module_exists(mod):
                 errors.append(f"{path}: módulo não encontrado: from {mod} import ...")
         if isinstance(node, ast.Import):
             for alias in node.names:
                 mod = alias.name
-                if mod.split(".")[0] in {"pandas", "streamlit", "plotly", "requests", "dotenv", "tkinter"}:
+                if mod.split(".")[0] in {"pandas", "streamlit", "plotly", "requests", "dotenv", "tkinter", "openai"}:
                     continue
                 if not module_exists(mod):
                     errors.append(f"{path}: módulo não encontrado: import {mod}")

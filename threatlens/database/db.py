@@ -16,6 +16,8 @@ REQUIRED_COLUMNS = {
     "analyst_notes": "TEXT NOT NULL DEFAULT ''",
     "case_status": "TEXT NOT NULL DEFAULT 'Novo'",
     "updated_at": "TEXT NOT NULL DEFAULT ''",
+    "ai_analysis_json": "TEXT NOT NULL DEFAULT '{}'",
+    "ai_analysis_created_at": "TEXT NOT NULL DEFAULT ''",
 }
 
 STATUS_OPTIONS = ["Novo", "Em análise", "Escalado", "Resolvido", "Falso positivo", "Monitorado", "Bloqueado"]
@@ -90,6 +92,8 @@ def init_db() -> None:
                 analyst_decision TEXT NOT NULL DEFAULT 'Pendente',
                 analyst_notes TEXT NOT NULL DEFAULT '',
                 case_status TEXT NOT NULL DEFAULT 'Novo',
+                ai_analysis_json TEXT NOT NULL DEFAULT '{}',
+                ai_analysis_created_at TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
@@ -115,8 +119,9 @@ def save_analysis(record: dict, as_case: bool = True) -> int:
                 case_id, ioc, ioc_type, score, risk_level, confidence_level,
                 recommendation, summary, sources_json, evidence_json,
                 score_breakdown_json, analyst_decision, analyst_notes,
-                case_status, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                case_status, ai_analysis_json, ai_analysis_created_at,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 case_id,
@@ -133,6 +138,8 @@ def save_analysis(record: dict, as_case: bool = True) -> int:
                 record.get("analyst_decision", "Pendente"),
                 record.get("analyst_notes", ""),
                 record.get("case_status", "Novo"),
+                json.dumps(record.get("ai_analysis", {}), ensure_ascii=False),
+                record.get("ai_analysis_created_at", ""),
                 created,
                 updated,
             ),
@@ -143,6 +150,26 @@ def save_analysis(record: dict, as_case: bool = True) -> int:
     return analysis_id
 
 
+def save_ai_analysis(analysis_id: int, ai_analysis: dict) -> None:
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE analyses SET ai_analysis_json = ?, ai_analysis_created_at = ?, updated_at = ? WHERE id = ?",
+            (json.dumps(ai_analysis, ensure_ascii=False), now_iso(), now_iso(), analysis_id),
+        )
+    create_audit_log("Análise IA gerada", "analysis", str(analysis_id), "Análise IA atualizada")
+
+
+def get_ai_analysis(analysis_id: int) -> dict:
+    row = get_analysis_by_id(analysis_id)
+    if not row:
+        return {}
+    try:
+        payload = json.loads(row.get("ai_analysis_json", "{}"))
+    except Exception:
+        payload = {}
+    return {"analysis": payload, "created_at": row.get("ai_analysis_created_at", "")}
+
+
 def insert_analysis(record: dict) -> int:
     return save_analysis(record, as_case=True)
 
@@ -151,6 +178,12 @@ def get_all_analyses() -> list[dict]:
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM analyses ORDER BY datetime(updated_at) DESC").fetchall()
     return [dict(row) for row in rows]
+
+
+def get_latest_analysis() -> dict | None:
+    with get_connection() as conn:
+        row = conn.execute("SELECT * FROM analyses ORDER BY datetime(updated_at) DESC LIMIT 1").fetchone()
+    return dict(row) if row else None
 
 
 def list_analyses() -> list[dict]:
@@ -195,16 +228,14 @@ def update_analysis_decision(analysis_id: int, decision: str, notes: str = "", c
 
 def update_analysis_notes(analysis_id: int, notes: str) -> None:
     row = get_analysis_by_id(analysis_id)
-    if not row:
-        return
-    update_case(analysis_id, row.get("case_status", "Novo"), row.get("analyst_decision", "Pendente"), notes)
+    if row:
+        update_case(analysis_id, row.get("case_status", "Novo"), row.get("analyst_decision", "Pendente"), notes)
 
 
 def update_case_status(analysis_id: int, case_status: str) -> None:
     row = get_analysis_by_id(analysis_id)
-    if not row:
-        return
-    update_case(analysis_id, case_status, row.get("analyst_decision", "Pendente"), row.get("analyst_notes", ""))
+    if row:
+        update_case(analysis_id, case_status, row.get("analyst_decision", "Pendente"), row.get("analyst_notes", ""))
 
 
 def clear_history() -> None:
@@ -232,59 +263,21 @@ def get_dashboard_stats() -> dict:
         types[row["ioc_type"]] = types.get(row["ioc_type"], 0) + 1
         status[row["case_status"]] = status.get(row["case_status"], 0) + 1
         try:
-            src = json.loads(row.get("sources_json", "{}"))
-            for name, st in src.items():
+            for name, st in json.loads(row.get("sources_json", "{}")).items():
                 if st == "Consultado":
                     active_sources.add(name)
         except Exception:
             pass
 
     open_cases = sum(1 for row in rows if row["case_status"] not in {"Resolvido", "Falso positivo"})
-    return {
-        "total": total,
-        "open_cases": open_cases,
-        "last_analysis": rows[0].get("updated_at", "-"),
-        "risk": risk,
-        "types": types,
-        "status": status,
-        "active_sources": len(active_sources),
-    }
+    return {"total": total, "open_cases": open_cases, "last_analysis": rows[0].get("updated_at", "-"), "risk": risk, "types": types, "status": status, "active_sources": len(active_sources)}
 
 
 def seed_demo_data() -> None:
-    iocs = [
-        ("185.220.101.1", "ipv4"), ("198.51.100.2", "ipv4"), ("203.0.113.77", "ipv4"),
-        ("evil-cdn-check.com", "domain"), ("pay-secure-login.net", "domain"),
-        ("https://malicious-c2.site/payload", "url"), ("https://dropper.test/update", "url"),
-        ("44d88612fea8a8f36de82e1278abb02f", "md5"), ("da39a3ee5e6b4b0d3255bfef95601890afd80709", "sha1"),
-        ("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "sha256"),
-        ("45.146.164.95", "ipv4"), ("phishing-portal.biz", "domain"),
-    ]
+    iocs = [("185.220.101.1", "ipv4"), ("198.51.100.2", "ipv4"), ("203.0.113.77", "ipv4"), ("evil-cdn-check.com", "domain"), ("pay-secure-login.net", "domain"), ("https://malicious-c2.site/payload", "url"), ("https://dropper.test/update", "url"), ("44d88612fea8a8f36de82e1278abb02f", "md5"), ("da39a3ee5e6b4b0d3255bfef95601890afd80709", "sha1"), ("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "sha256"), ("45.146.164.95", "ipv4"), ("phishing-portal.biz", "domain")]
     risk_opts = [("Baixo", "Baixa", 18), ("Médio", "Média", 44), ("Alto", "Média", 67), ("Crítico", "Alta", 89)]
-
     for idx, (ioc, ioc_type) in enumerate(iocs, start=1):
         risk, conf, score = choice(risk_opts)
         created = datetime.utcnow() - timedelta(days=randint(0, 40), hours=randint(0, 23))
-        save_analysis(
-            {
-                "case_id": f"TL-DEMO-{idx:04d}",
-                "ioc": ioc,
-                "ioc_type": ioc_type,
-                "score": score,
-                "risk_level": risk,
-                "confidence_level": conf,
-                "recommendation": "Recomendação demo: validar em telemetria interna antes de qualquer contenção.",
-                "summary": "Registro fictício do modo demo para visualização de fluxo SOC.",
-                "sources": {"VirusTotal": "Consultado", "AbuseIPDB": "Consultado" if ioc_type == "ipv4" else "Não aplicável", "URLhaus": "Consultado" if ioc_type in {"url", "domain"} else "Não aplicável", "IPinfo": "Sem API key"},
-                "evidence": {"demo": True, "reports": randint(0, 120)},
-                "score_breakdown": [f"+{score//2} Indicadores externos", f"+{score-score//2} Correlação de contexto"],
-                "case_status": choice(STATUS_OPTIONS),
-                "analyst_decision": choice(DECISION_OPTIONS),
-                "analyst_notes": "Amostra gerada para demonstração do ThreatLens.",
-                "created_at": created.isoformat(timespec="seconds"),
-                "updated_at": created.isoformat(timespec="seconds"),
-            },
-            as_case=True,
-        )
-
+        save_analysis({"case_id": f"TL-DEMO-{idx:04d}", "ioc": ioc, "ioc_type": ioc_type, "score": score, "risk_level": risk, "confidence_level": conf, "recommendation": "Recomendação demo: validar em telemetria interna antes de qualquer contenção.", "summary": "Registro fictício do modo demo para visualização de fluxo SOC.", "sources": {"VirusTotal": "Consultado", "AbuseIPDB": "Consultado" if ioc_type == "ipv4" else "Não aplicável", "URLhaus": "Consultado" if ioc_type in {"url", "domain"} else "Não aplicável", "IPinfo": "Sem API key"}, "evidence": {"demo": True, "reports": randint(0, 120)}, "score_breakdown": [f"+{score//2} Indicadores externos", f"+{score-score//2} Correlação de contexto"], "case_status": choice(STATUS_OPTIONS), "analyst_decision": choice(DECISION_OPTIONS), "analyst_notes": "Amostra gerada para demonstração do ThreatLens.", "created_at": created.isoformat(timespec="seconds"), "updated_at": created.isoformat(timespec="seconds")}, as_case=True)
     create_audit_log("Demo carregado", "system", "demo", "Base demo populada")

@@ -8,6 +8,7 @@ import streamlit as st
 
 from core.analyzer import analyze_ioc
 from database.db import create_audit_log, save_analysis
+from services.openai_analysis import generate_ai_ioc_analysis
 from utils.export import to_csv_bytes
 from utils.ui import recommendation_card, render_header, render_risk_badge, render_section_title, render_status_badge
 
@@ -83,6 +84,21 @@ def render(secrets: dict) -> None:
     k1.download_button("Exportar .kql", data=result["kql"].encode("utf-8"), file_name=f"{result['case_id']}.kql", mime="text/plain")
     k2.text_area("Copiar KQL", value=result["kql"], height=100)
 
+
+    render_section_title("Análise assistida por IA")
+    st.caption("Esta análise é auxiliar e deve ser validada pelo analista.")
+    if st.button("Gerar análise IA (sessão atual)"):
+        ai = generate_ai_ioc_analysis(result["ioc"], result["ioc_type"], result, result["kql"], secrets.get("OPENAI_API_KEY"))
+        if ai.get("status") == "Consultado":
+            st.session_state["latest_ai_analysis"] = ai
+            st.success("Análise IA gerada para esta sessão.")
+        elif ai.get("status") == "Sem API key":
+            st.warning("OPENAI_API_KEY ausente. Configure em Configurações.")
+        else:
+            st.error(f"Falha na análise IA: {ai.get('error', ai.get('status'))}")
+
+    if st.session_state.get("latest_ai_analysis"):
+        st.json(st.session_state["latest_ai_analysis"], expanded=False)
     render_section_title("Evidências técnicas")
     st.json(result["evidence"], expanded=False)
 

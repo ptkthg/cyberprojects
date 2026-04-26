@@ -23,3 +23,13 @@
 - CSV/JSON no lote e histórico.
 - HTML relatório na análise.
 - KQL em `.kql`.
+
+
+## Cards clicáveis do Painel
+- Riscos abrem Histórico já filtrado.
+- Casos abertos abre Casos filtrados.
+- Última análise abre Detalhe da Análise.
+
+## Gerar análise IA
+- Em Analisar IOC ou Detalhe da Análise, clique em 'Gerar análise IA'.
+- Se OPENAI_API_KEY estiver ausente, o app mostra aviso amigável.

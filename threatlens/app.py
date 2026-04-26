@@ -34,6 +34,7 @@ def load_secrets() -> dict:
         "ABUSEIPDB_API_KEY": pick("ABUSEIPDB_API_KEY"),
         "URLHAUS_API_KEY": pick("URLHAUS_API_KEY"),
         "IPINFO_API_KEY": pick("IPINFO_API_KEY"),
+        "OPENAI_API_KEY": pick("OPENAI_API_KEY"),
     }
 
 
@@ -51,7 +52,10 @@ def main() -> None:
         options = list(PAGE_MAP.keys())
         if st.session_state.get("selected_analysis_id"):
             options.append("🧾 Detalhe da Análise")
-        selected = st.radio("Navegação", options)
+        current = st.session_state.get("current_page")
+        default_idx = options.index(current) if current in options else 0
+        selected = st.radio("Navegação", options, index=default_idx)
+        st.session_state["current_page"] = selected
         st.caption("Desenvolvido por Patrick Santos")
 
     page = PAGE_MAP.get(selected)

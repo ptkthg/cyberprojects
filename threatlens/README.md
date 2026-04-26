@@ -21,6 +21,9 @@ ThreatLens é uma plataforma de enriquecimento, triagem e documentação de indi
 - Modo demo com dados realistas para validação sem API key.
 - Launcher desktop (Tkinter) + script `abrir_threatlens.bat`.
 
+- Cards do painel são clicáveis e aplicam filtros/navegação contextual.
+- Análise assistida por IA via OpenAI (opcional).
+
 ## Screenshots sugeridos
 - Dashboard (Painel)
 - Analisar IOC
@@ -45,6 +48,7 @@ VIRUSTOTAL_API_KEY = ""
 ABUSEIPDB_API_KEY = ""
 URLHAUS_API_KEY = ""
 IPINFO_API_KEY = ""
+OPENAI_API_KEY = ""
 ```
 
 ## Execução
@@ -105,3 +109,9 @@ threatlens/
 - [security](docs/security.md)
 - [roadmap](docs/roadmap.md)
 - [screenshots](docs/screenshots.md)
+
+
+## IA e privacidade
+- A análise IA envia apenas IOC + resultados de enriquecimento (sem secrets).
+- Não envie logs internos sensíveis, credenciais ou dados pessoais.
+- A resposta IA é auxiliar e exige validação humana.

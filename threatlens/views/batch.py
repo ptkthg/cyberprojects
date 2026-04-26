@@ -7,7 +7,8 @@ import streamlit as st
 
 from core.analyzer import analyze_ioc
 from core.ioc_detector import detect_ioc_type
-from database.db import save_analysis
+from database.db import save_ai_analysis, save_analysis
+from services.openai_analysis import generate_ai_ioc_analysis
 from utils.export import to_csv_bytes
 from utils.ui import render_empty_state, render_header
 
@@ -41,6 +42,10 @@ def render(secrets: dict) -> None:
         preview.append({"ioc": norm, "tipo_detectado": ioc_type})
     st.dataframe(pd.DataFrame(preview), use_container_width=True)
 
+    generate_ai = st.checkbox("Gerar análise IA para cada IOC")
+    if generate_ai:
+        st.warning("Esta opção pode consumir créditos da API OpenAI.")
+
     if st.button("Analisar todos", type="primary"):
         results = []
         progress = st.progress(0)
@@ -50,6 +55,11 @@ def render(secrets: dict) -> None:
                 if result["ioc_type"] != "unknown":
                     analysis_id = save_analysis(result, as_case=True)
                     result["analysis_id"] = analysis_id
+                    if generate_ai:
+                        ai = generate_ai_ioc_analysis(result["ioc"], result["ioc_type"], result, result.get("kql"), secrets.get("OPENAI_API_KEY"))
+                        if ai.get("status") == "Consultado":
+                            save_ai_analysis(analysis_id, ai)
+                        result["ai_status"] = ai.get("status", "N/A")
                 results.append(result)
             except Exception as exc:
                 results.append({"ioc": ioc, "ioc_type": "unknown", "risk_level": "Baixo", "score": 0, "confidence_level": "Baixa", "error": str(exc)})
