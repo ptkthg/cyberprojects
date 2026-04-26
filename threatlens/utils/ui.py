@@ -15,6 +15,9 @@ RISK_STYLES = {
 }
 
 
+CONFIDENCE_STYLES = {"Baixa": "#64748b", "Média": "#0ea5e9", "Alta": "#22c55e"}
+
+
 def render_logo(width: int = 260) -> None:
     path = ASSETS_DIR / "logo.svg"
     if path.exists():
@@ -38,13 +41,19 @@ def metric_card(label: str, value: str) -> None:
     )
 
 
-def risk_badge(risk_level: str, score: int) -> None:
-    bg, fg = RISK_STYLES.get(risk_level, ("#374151", "#d1d5db"))
+def triage_card(result: dict) -> None:
+    risk_bg, risk_fg = RISK_STYLES.get(result.get("risk_level", "Baixo"), ("#374151", "#d1d5db"))
+    conf_color = CONFIDENCE_STYLES.get(result.get("confidence_level", "Baixa"), "#64748b")
     st.markdown(
         f"""
         <div class='tl-card'>
-          <span class='tl-badge' style='background:{bg};color:{fg};'>Risco {risk_level}</span>
-          <h3 style='margin:.6rem 0 .2rem 0;'>Score {score}/100</h3>
+            <div style='display:flex; gap:8px; flex-wrap:wrap;'>
+                <span class='tl-badge' style='background:{risk_bg};color:{risk_fg};'>Risco {result.get('risk_level')}</span>
+                <span class='tl-badge' style='background:#0f172a;color:{conf_color};border:1px solid {conf_color};'>Confiança {result.get('confidence_level')}</span>
+                <span class='tl-badge' style='background:#1e293b;color:#93c5fd;'>Tipo {result.get('ioc_type')}</span>
+            </div>
+            <h3 style='margin:8px 0 4px 0;'>IOC: {result.get('ioc')}</h3>
+            <p style='margin:0;'>Case ID: <b>{result.get('case_id','')}</b> • Score <b>{result.get('score')}/100</b></p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -59,4 +68,4 @@ def recommendation_card(text: str) -> None:
 
 
 def render_footer() -> None:
-    st.markdown("<div class='tl-footer'>Desenvolvido por Patrick Santos</div>", unsafe_allow_html=True)
+    st.markdown("<div class='tl-footer'>ThreatLens • IOC Enrichment & Triage Platform • Desenvolvido por Patrick Santos</div>", unsafe_allow_html=True)

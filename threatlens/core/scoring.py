@@ -11,6 +11,28 @@ def score_to_risk(score: int) -> str:
     return "Crítico"
 
 
+def confidence_level(results: dict) -> str:
+    consulted = [
+        v for k, v in results.items() if k != "ioc_type" and isinstance(v, dict) and v.get("status") == "Consultado"
+    ]
+
+    strong = 0
+    vt_mal = int(results.get("virustotal", {}).get("data", {}).get("last_analysis_stats", {}).get("malicious", 0) or 0)
+    abuse = int(results.get("abuseipdb", {}).get("data", {}).get("abuse_confidence_score", 0) or 0)
+    if vt_mal > 0:
+        strong += 1
+    if abuse > 25:
+        strong += 1
+    if results.get("urlhaus", {}).get("data", {}).get("found"):
+        strong += 1
+
+    if strong >= 2 and len(consulted) >= 2:
+        return "Alta"
+    if strong >= 1 or len(consulted) >= 2:
+        return "Média"
+    return "Baixa"
+
+
 def calculate_risk_score(results: dict) -> dict:
     score = 0
     breakdown: list[str] = []
@@ -64,4 +86,5 @@ def calculate_risk_score(results: dict) -> dict:
         "score": final_score,
         "risk_level": score_to_risk(final_score),
         "score_breakdown": breakdown,
+        "confidence_level": confidence_level(results),
     }

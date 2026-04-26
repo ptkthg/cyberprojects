@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from database.db import init_db
 from utils.styles import apply_global_styles
 from utils.ui import render_footer, render_logo
-from views import about, analyze, batch, dashboard, history, settings
+from views import about, analyze, batch, cases, dashboard, history, settings
 
 load_dotenv()
 
@@ -35,10 +35,18 @@ def main() -> None:
 
     with st.sidebar:
         render_logo(width=210)
-        st.caption("SOC Blue Team Console")
+        st.caption("IOC Enrichment & Triage Platform")
         page = st.radio(
             "Menu",
-            ["Dashboard", "Analisar IOC", "Análise em lote", "Histórico", "Configurações", "Sobre"],
+            [
+                "Dashboard",
+                "Analisar IOC",
+                "Análise em lote",
+                "Histórico",
+                "Central de Casos",
+                "Configurações",
+                "Sobre",
+            ],
             label_visibility="visible",
         )
 
@@ -50,6 +58,8 @@ def main() -> None:
         batch.render(secrets)
     elif page == "Histórico":
         history.render()
+    elif page == "Central de Casos":
+        cases.render()
     elif page == "Configurações":
         settings.render(secrets)
     else:

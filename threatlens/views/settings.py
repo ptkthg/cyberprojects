@@ -15,7 +15,7 @@ def render(secrets: dict) -> None:
 
     st.write(f"**VirusTotal:** {_status(secrets.get('VIRUSTOTAL_API_KEY'))}")
     st.write(f"**AbuseIPDB:** {_status(secrets.get('ABUSEIPDB_API_KEY'))}")
-    st.write(f"**URLhaus:** {_status(secrets.get('URLHAUS_API_KEY'))} (opcional)")
+    st.write(f"**URLhaus:** {_status(secrets.get('URLHAUS_API_KEY'))}")
     st.write(f"**IPinfo:** {_status(secrets.get('IPINFO_API_KEY'))}")
 
     st.markdown("### Configure em `.streamlit/secrets.toml`")
@@ -23,3 +23,4 @@ def render(secrets: dict) -> None:
         'VIRUSTOTAL_API_KEY = ""\nABUSEIPDB_API_KEY = ""\nURLHAUS_API_KEY = ""\nIPINFO_API_KEY = ""',
         language="toml",
     )
+    st.warning("Não envie dados internos sensíveis para APIs externas sem validação de política interna.")

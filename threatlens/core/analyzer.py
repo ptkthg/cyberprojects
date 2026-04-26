@@ -6,6 +6,7 @@ from core.ioc_detector import detect_ioc_type
 from core.kql_generator import generate_kql
 from core.recommendations import generate_recommendation, generate_summary
 from core.scoring import calculate_risk_score
+from database.db import generate_case_id
 from services.abuseipdb import query_abuseipdb
 from services.ipinfo import query_ipinfo
 from services.urlhaus import query_urlhaus
@@ -14,19 +15,27 @@ from services.virustotal import query_virustotal
 
 def analyze_ioc(ioc_raw: str, secrets: dict) -> dict:
     ioc, ioc_type = detect_ioc_type(ioc_raw)
+    now = datetime.utcnow().isoformat(timespec="seconds")
+
     if ioc_type == "unknown":
         return {
+            "case_id": generate_case_id(),
             "ioc": ioc,
             "ioc_type": ioc_type,
             "score": 0,
             "risk_level": "Baixo",
+            "confidence_level": "Baixa",
             "score_breakdown": ["+0 Tipo de IOC não reconhecido"],
             "recommendation": "IOC inválido. Ajuste o indicador e tente novamente.",
             "summary": "Não foi possível identificar o tipo do IOC.",
             "sources": {},
             "evidence": {"errors": ["Tipo de IOC não reconhecido"]},
             "kql": "// IOC inválido",
-            "created_at": datetime.utcnow().isoformat(timespec="seconds"),
+            "case_status": "Novo",
+            "analyst_decision": "Pendente",
+            "analyst_notes": "",
+            "created_at": now,
+            "updated_at": now,
         }
 
     vt = query_virustotal(ioc, ioc_type, secrets.get("VIRUSTOTAL_API_KEY"))
@@ -43,11 +52,8 @@ def analyze_ioc(ioc_raw: str, secrets: dict) -> dict:
     }
 
     score_payload = calculate_risk_score(results)
-    score = score_payload["score"]
-    risk_level = score_payload["risk_level"]
-
-    recommendation = generate_recommendation(score, ioc_type, results)
-    summary = generate_summary(ioc, ioc_type, score, risk_level, results)
+    recommendation = generate_recommendation(score_payload["score"], ioc_type, results)
+    summary = generate_summary(ioc, ioc_type, score_payload["score"], score_payload["risk_level"], results)
 
     evidence = {
         "vt_stats": vt.get("data", {}).get("last_analysis_stats", {}),
@@ -67,10 +73,12 @@ def analyze_ioc(ioc_raw: str, secrets: dict) -> dict:
     }
 
     return {
+        "case_id": generate_case_id(),
         "ioc": ioc,
         "ioc_type": ioc_type,
-        "score": score,
-        "risk_level": risk_level,
+        "score": score_payload["score"],
+        "risk_level": score_payload["risk_level"],
+        "confidence_level": score_payload["confidence_level"],
         "score_breakdown": score_payload["score_breakdown"],
         "recommendation": recommendation,
         "summary": summary,
@@ -82,5 +90,9 @@ def analyze_ioc(ioc_raw: str, secrets: dict) -> dict:
         },
         "evidence": evidence,
         "kql": generate_kql(ioc, ioc_type),
-        "created_at": datetime.utcnow().isoformat(timespec="seconds"),
+        "case_status": "Novo",
+        "analyst_decision": "Pendente",
+        "analyst_notes": "",
+        "created_at": now,
+        "updated_at": now,
     }

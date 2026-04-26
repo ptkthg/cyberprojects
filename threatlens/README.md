@@ -1,37 +1,44 @@
-# ThreatLens - IOC Enrichment & Triage Platform
+# ThreatLens
 
-![ThreatLens Banner](assets/blue_team_banner.svg)
+![ThreatLens Logo](assets/logo.svg)
+
+## IOC Enrichment & Triage Platform
 
 **Desenvolvido por Patrick Santos**
 
-Plataforma de enriquecimento e triagem de IOCs para Blue Team/SOC, com interface Streamlit profissional, histórico local em SQLite, análise individual/lote, score explicável e integração com fontes OSINT.
+ThreatLens é uma plataforma operacional para Blue Team/SOC voltada para enriquecimento de IOC, triagem com score explicável, central de casos, trilha de auditoria e suporte a investigação com KQL.
 
-## Principais funcionalidades
+> O ThreatLens apoia a decisão do analista e **não executa bloqueios automáticos**.
 
-- Detecção e normalização de IOC:
-  - IPv4, domínio, URL, MD5, SHA1 e SHA256.
-  - Suporte a formato ofuscado como `dominio[.]com`.
-- Enriquecimento de IOC em múltiplas fontes:
-  - VirusTotal v3
-  - AbuseIPDB
-  - URLhaus
-  - IPinfo (opcional)
-- Score de risco explicável:
-  - score final + breakdown dos motivos da pontuação
-  - classificação Baixo/Médio/Alto/Crítico
-- Recomendação operacional para SOC N1/N2.
-- KQL generator para Microsoft Defender Advanced Hunting.
-- Histórico com filtros e decisão do analista (Pendente, Monitorar, Investigar, Bloquear, Falso positivo, Escalado para incidente).
-- Análise em lote (CSV/TXT) com barra de progresso e tolerância a falhas por IOC.
-- Exportação CSV e relatório HTML.
-- Launcher desktop (Tkinter) para iniciar/parar o ThreatLens sem terminal.
+## Funcionalidades
 
-## Prints sugeridos
+- Enriquecimento multi-fonte: VirusTotal, AbuseIPDB, URLhaus e IPinfo.
+- Detecção de IOC: IPv4, domínio, URL, MD5, SHA1 e SHA256.
+- Score de risco com `score_breakdown` e `confidence_level`.
+- Dashboard SOC com distribuição por risco, tipo e status de caso.
+- Central de Casos com edição de status, decisão e notas.
+- Histórico com filtros e trilha de auditoria (`audit_logs`).
+- Análise em lote (CSV/TXT) e exportação CSV.
+- Exportação de relatório HTML com dados de caso.
+- Launcher desktop (Tkinter) para iniciar/parar o app.
+- Modo demo para validação visual sem API key.
 
-- Dashboard SOC com métricas e gráficos.
-- Tela de triagem IOC com score breakdown.
-- Histórico com decisão do analista.
+## Screenshots sugeridos
+
+- Dashboard com métricas SOC.
+- Tela Analisar IOC com score + confiança.
+- Central de Casos em edição.
 - Launcher desktop em execução.
+
+## Arquitetura
+
+- `app.py`: roteamento principal da UI Streamlit.
+- `core/`: detecção IOC, scoring, recomendações e KQL.
+- `services/`: integrações HTTP com fontes OSINT.
+- `database/`: SQLite, migração e auditoria.
+- `views/`: telas funcionais do app.
+- `utils/`: componentes visuais e estilos globais.
+- `docs/`: documentação operacional e técnica.
 
 ## Instalação
 
@@ -54,105 +61,42 @@ URLHAUS_API_KEY = ""
 IPINFO_API_KEY = ""
 ```
 
-Também é possível usar `.env` com base em `.env.example`.
+Nunca exponha valores de chave em prints, logs ou commits.
 
-> O app funciona parcialmente mesmo sem todas as chaves.
-
-## Executar via Streamlit
+## Execução via Streamlit
 
 ```bash
 streamlit run app.py
 ```
 
-## Executar via launcher.py (desktop)
+## Execução via launcher desktop
 
 ```bash
 python launcher.py
 ```
 
-Funcionalidades do launcher:
-- Iniciar ThreatLens
-- Abrir no navegador
-- Parar ThreatLens
-- Sair
-- Status de execução
-
-## Executar via arquivo BAT (Windows)
-
-Duplo clique em `abrir_threatlens.bat`.
-
-Fluxo:
-- ativa `.venv` se existir
-- executa `python launcher.py`
-- mantém terminal para visualizar erro
-
-## Gerar executável (PyInstaller)
-
-```bash
-pip install pyinstaller
-pyinstaller --onefile --noconsole --name ThreatLens launcher.py
-```
-
-Saída em `dist/ThreatLens.exe`.
-
-## Estrutura do projeto
-
-```text
-threatlens/
-├── app.py
-├── launcher.py
-├── abrir_threatlens.bat
-├── requirements.txt
-├── README.md
-├── .gitignore
-├── .env.example
-├── assets/
-│   ├── logo.svg
-│   ├── shield.svg
-│   ├── radar.svg
-│   ├── network.svg
-│   ├── threat.svg
-│   └── blue_team_banner.svg
-├── .streamlit/
-│   ├── config.toml
-│   └── secrets.toml.example
-├── database/
-│   └── db.py
-├── services/
-│   ├── virustotal.py
-│   ├── abuseipdb.py
-│   ├── urlhaus.py
-│   └── ipinfo.py
-├── core/
-│   ├── analyzer.py
-│   ├── ioc_detector.py
-│   ├── scoring.py
-│   ├── recommendations.py
-│   ├── kql_generator.py
-│   └── normalizer.py
-├── views/
-│   ├── dashboard.py
-│   ├── analyze.py
-│   ├── batch.py
-│   ├── history.py
-│   ├── settings.py
-│   └── about.py
-└── utils/
-    ├── export.py
-    ├── styles.py
-    └── ui.py
-```
-
 ## Limitações
 
-- Dependência de disponibilidade e rate limit das APIs externas.
-- IOC enrichment não substitui correlação em logs internos.
-- Resultado deve ser usado como apoio à decisão.
+- Dependência de disponibilidade/rate limit de APIs externas.
+- Não substitui investigação com telemetria interna.
+- Resultados devem ser contextualizados pelo analista SOC.
+
+## Roadmap
+
+- RBAC e trilhas de aprovação por equipe.
+- Integração com SIEM/SOAR.
+- Exportação PDF nativa.
+- Casos com anexos e timeline avançada.
 
 ## Uso responsável
 
-ThreatLens **não realiza bloqueio automático** em firewall/EDR/endpoint. A decisão final é sempre do analista.
+- Não realizar bloqueios automáticos sem validação humana.
+- Não enviar dados internos sensíveis para serviços externos sem política formal.
 
----
+## Documentação adicional
 
-Desenvolvido por Patrick Santos.
+- [Instalação](docs/installation.md)
+- [Uso](docs/usage.md)
+- [Arquitetura](docs/architecture.md)
+- [Segurança](docs/security.md)
+- [Roadmap](docs/roadmap.md)

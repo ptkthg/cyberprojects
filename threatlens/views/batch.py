@@ -22,7 +22,7 @@ def _read_iocs(uploaded_file) -> list[str]:
 
 def render(secrets: dict) -> None:
     render_banner()
-    section_banner("Análise em lote de IOC", "🧪")
+    section_banner("Análise em lote com persistência de casos", "🧪")
     file = st.file_uploader("Upload CSV/TXT com IOCs", type=["csv", "txt"])
     if file and st.button("Analisar lote", type="primary"):
         try:
@@ -38,25 +38,30 @@ def render(secrets: dict) -> None:
                 result = analyze_ioc(ioc, secrets)
             except Exception:
                 result = {
+                    "case_id": "",
                     "ioc": ioc,
                     "ioc_type": "unknown",
                     "score": 0,
                     "risk_level": "Baixo",
+                    "confidence_level": "Baixa",
                     "recommendation": "Falha na análise deste IOC.",
                     "sources": {},
                 }
+
             results.append(
                 {
+                    "case_id": result.get("case_id", ""),
                     "ioc": result["ioc"],
                     "ioc_type": result["ioc_type"],
                     "score": result["score"],
                     "risk_level": result["risk_level"],
+                    "confidence_level": result.get("confidence_level", "Baixa"),
                     "recommendation": result["recommendation"],
                     "sources": ", ".join([f"{k}:{v}" for k, v in result.get("sources", {}).items()]),
                 }
             )
             if result.get("ioc_type") != "unknown" and "summary" in result:
-                save_analysis(result)
+                save_analysis(result, as_case=True)
             progress.progress(idx / max(len(iocs), 1))
 
         st.success(f"{len(results)} IOCs processados.")
