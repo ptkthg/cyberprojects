@@ -7,7 +7,7 @@ ROOT = Path(__file__).parent
 
 
 def module_exists(module: str) -> bool:
-    if module.split(".")[0] in {"tkinter","ttk","json","os","sys","sqlite3","datetime","pathlib","subprocess","socket","webbrowser","ast","random","html","ipaddress","re","urllib","io","base64"}:
+    if module.split(".")[0] in {"tkinter","ttk","json","os","sys","sqlite3","datetime","pathlib","subprocess","socket","webbrowser","ast","random","html","ipaddress","re","urllib","io","base64","platform"}:
         return True
     parts = module.split(".")
     candidate = ROOT.joinpath(*parts)

@@ -5,22 +5,14 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
-from database.db import init_db
+from database.db import get_dashboard_stats, init_db
 from utils.styles import apply_global_styles
-from utils.ui import render_footer, render_logo
+from utils.ui import render_footer, render_status_bar, render_top_navigation
 from views import about, analysis_detail, analyze, batch, cases, dashboard, history, settings
 
 load_dotenv()
 
-PAGE_MAP = {
-    "📊 Painel": "painel",
-    "🔎 Analisar IOC": "analisar",
-    "📥 Análise em Lote": "lote",
-    "🕒 Histórico": "historico",
-    "📁 Casos": "casos",
-    "⚙️ Configurações": "config",
-    "ℹ️ Sobre": "sobre",
-}
+PAGES = ["📊 Painel", "🔎 Analisar IOC", "📥 Análise em Lote", "🕒 Histórico", "📁 Casos", "⚙️ Configurações", "ℹ️ Sobre"]
 
 
 def load_secrets() -> dict:
@@ -44,35 +36,33 @@ def main() -> None:
     init_db()
     secrets = load_secrets()
 
-    with st.sidebar:
-        render_logo(width=220)
-        st.markdown("**ThreatLens**")
-        st.caption("IOC Enrichment & Triage Platform")
-        st.divider()
-        options = list(PAGE_MAP.keys())
-        if st.session_state.get("selected_analysis_id"):
-            options.append("🧾 Detalhe da Análise")
-        current = st.session_state.get("current_page")
-        default_idx = options.index(current) if current in options else 0
-        selected = st.radio("Navegação", options, index=default_idx)
-        st.session_state["current_page"] = selected
-        st.caption("Desenvolvido por Patrick Santos")
+    current = st.session_state.get("current_page", "📊 Painel")
+    if current == "🧾 Detalhe da Análise" and st.session_state.get("selected_analysis_id"):
+        nav_options = PAGES + ["🧾 Detalhe da Análise"]
+    else:
+        nav_options = PAGES
 
-    page = PAGE_MAP.get(selected)
-    if selected == "🧾 Detalhe da Análise":
-        analysis_detail.render(secrets)
-    elif page == "painel":
+    selected = render_top_navigation(nav_options, current)
+    st.session_state["current_page"] = selected
+
+    stats = get_dashboard_stats()
+    mode = "Demo" if stats.get("total", 0) and "TL-DEMO" in (str(st.session_state.get("selected_analysis_id", ""))) else "Produção local"
+    render_status_bar(stats.get("active_sources", 0), mode)
+
+    if selected == "📊 Painel":
         dashboard.render(secrets)
-    elif page == "analisar":
+    elif selected == "🔎 Analisar IOC":
         analyze.render(secrets)
-    elif page == "lote":
+    elif selected == "📥 Análise em Lote":
         batch.render(secrets)
-    elif page == "historico":
+    elif selected == "🕒 Histórico":
         history.render(secrets)
-    elif page == "casos":
+    elif selected == "📁 Casos":
         cases.render(secrets)
-    elif page == "config":
+    elif selected == "⚙️ Configurações":
         settings.render(secrets)
+    elif selected == "🧾 Detalhe da Análise":
+        analysis_detail.render(secrets)
     else:
         about.render(secrets)
 
