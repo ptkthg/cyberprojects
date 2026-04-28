@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+.streamlit/secrets.toml
+.env
+threatlens.db
+*.db
+build/
+dist/
+*.spec
+.DS_Store
