@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
+import platform
+from textwrap import dedent
 
 import streamlit as st
 
@@ -13,34 +16,55 @@ RISK_STYLES = {"Baixo": ("#0b3b5c", "#7dd3fc"), "Médio": ("#78350f", "#fbbf24")
 STATUS_COLORS = {"Novo": "#38bdf8", "Em análise": "#60a5fa", "Escalado": "#f59e0b", "Resolvido": "#22c55e", "Falso positivo": "#94a3b8", "Monitorado": "#a78bfa", "Bloqueado": "#ef4444"}
 
 
-def render_logo(width: int = 240) -> None:
+def render_logo(width: int = 190) -> None:
     p = ASSETS_DIR / "logo.svg"
     if p.exists():
         st.image(str(p), width=width)
 
 
+def render_top_navigation(options: list[str], current: str) -> str:
+    cols = st.columns([2] + [1] * len(options))
+    with cols[0]:
+        render_logo(180)
+    selected = current if current in options else options[0]
+    for i, opt in enumerate(options, start=1):
+        with cols[i]:
+            if st.button(opt, key=f"nav_{opt}", use_container_width=True, type="primary" if opt == selected else "secondary"):
+                selected = opt
+                go_to_page(opt)
+                st.rerun()
+    return selected
+
+
+def render_status_bar(active_sources: int, mode: str, version: str = "v1.3.0", data_window: str = "Últimas 24h") -> None:
+    os_name = platform.system()
+    updated = datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S")
+    status_html = dedent(
+        f"""
+        <div class='tl-statusbar'>
+            <span><b>Sistema Operacional:</b> {os_name}</span>
+            <span><b>Ambiente:</b> {mode}</span>
+            <span><b>Versão:</b> {version}</span>
+            <span><b>Atualizado em:</b> {updated}</span>
+            <span><b>Janela de dados:</b> {data_window}</span>
+            <span><b>Fontes ativas:</b> {active_sources}</span>
+        </div>
+        """
+    ).strip()
+    st.markdown(status_html, unsafe_allow_html=True)
+
+
 def render_header(title: str, subtitle: str, icon: str = "🛡️") -> None:
-    st.markdown(f"<div class='tl-banner'><h3>{icon} {title}</h3><p style='margin:0;color:#94a3b8'>{subtitle}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='tl-banner'><h2>{icon} {title}</h2><p style='margin:0;color:#94a3b8'>{subtitle}</p></div>", unsafe_allow_html=True)
 
 
 def render_section_title(text: str) -> None:
     st.markdown(f"### {text}")
 
 
-def render_metric_card(
-    title: str,
-    value: str,
-    icon: str = "📌",
-    subtitle: str = "",
-    risk_level: str | None = None,
-    on_click_key: str | None = None,
-    target_page: str | None = None,
-    filter_type: str | None = None,
-    filter_value: str | int | None = None,
-) -> None:
-    badge = f"<div class='tl-label'>{subtitle}</div>" if subtitle else ""
-    st.markdown(f"<div class='tl-card'><div class='tl-metric'>{icon} {value}</div><div class='tl-label'>{title}</div>{badge}</div>", unsafe_allow_html=True)
-    if on_click_key and st.button("Abrir", key=on_click_key):
+def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str = "", risk_level: str | None = None, on_click_key: str | None = None, target_page: str | None = None, filter_type: str | None = None, filter_value: str | int | None = None) -> None:
+    st.markdown(f"<div class='tl-card tl-clickable'><div class='tl-metric'>{icon} {value}</div><div class='tl-label'>{title}</div><div class='tl-mini'>{subtitle}</div></div>", unsafe_allow_html=True)
+    if on_click_key and st.button("Abrir", key=on_click_key, use_container_width=True):
         if target_page:
             go_to_page(target_page)
         if filter_type and filter_value is not None:
@@ -73,7 +97,7 @@ def recommendation_card(text: str) -> None:
 
 def render_empty_state(title: str, message: str) -> None:
     icon = ASSETS_DIR / "empty_state.svg"
-    c1, c2 = st.columns([1, 3])
+    c1, c2 = st.columns([1, 4])
     if icon.exists():
         c1.image(str(icon), width=90)
     c2.markdown(f"<div class='tl-card'><h4>{title}</h4><p>{message}</p></div>", unsafe_allow_html=True)
@@ -84,7 +108,7 @@ def render_social_links() -> None:
 
 
 def render_footer() -> None:
-    st.markdown("<div class='tl-footer'>Desenvolvido por Patrick Santos • <a href='[INSERIR_LINK_LINKEDIN]'>LinkedIn</a> • <a href='[INSERIR_LINK_GITHUB]'>GitHub</a> • <a href='[INSERIR_LINK_PORTFOLIO]'>Portfólio</a> • <a href='mailto:[INSERIR_EMAIL_PROFISSIONAL]'>E-mail</a></div>", unsafe_allow_html=True)
+    st.markdown("<div class='tl-footer'>Desenvolvido por Patrick Santos</div>", unsafe_allow_html=True)
 
 
 metric_card = render_metric_card
