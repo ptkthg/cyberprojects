@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="90" viewBox="0 0 360 90">
+  <rect width="360" height="90" rx="14" fill="#0b1220"/>
+  <path d="M30 15 L58 25 L58 45 C58 63 45 72 30 78 C15 72 2 63 2 45 L2 25 Z" fill="#0ea5e9"/>
+  <path d="M30 26 L48 33 L48 45 C48 56 39 63 30 67 C21 63 12 56 12 45 L12 33 Z" fill="#082f49"/>
+  <text x="78" y="40" fill="#e2e8f0" font-family="Segoe UI, Arial" font-size="28" font-weight="700">ThreatLens</text>
+  <text x="78" y="63" fill="#38bdf8" font-family="Segoe UI, Arial" font-size="12">IOC Enrichment &amp; Triage Platform</text>
+</svg>
