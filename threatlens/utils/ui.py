@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-import platform
+import re
 from textwrap import dedent
 
 import streamlit as st
@@ -23,31 +23,40 @@ def render_logo(width: int = 190) -> None:
 
 
 def render_top_navigation(options: list[str], current: str) -> str:
-    cols = st.columns([2] + [1] * len(options))
-    with cols[0]:
-        render_logo(180)
-    selected = current if current in options else options[0]
-    for i, opt in enumerate(options, start=1):
-        with cols[i]:
-            if st.button(opt, key=f"nav_{opt}", use_container_width=True, type="primary" if opt == selected else "secondary"):
-                selected = opt
-                go_to_page(opt)
-                st.rerun()
-    return selected
+    visible_options = options[:]
+    selected_internal = current if current in visible_options else visible_options[0]
+    label_to_internal = {re.sub(r"^[^\wÀ-ÿ]+ ?", "", opt): opt for opt in visible_options}
+    selected_label = re.sub(r"^[^\wÀ-ÿ]+ ?", "", selected_internal)
+
+    logo_col, nav_col = st.columns([1.3, 8.7], vertical_alignment="center")
+    with logo_col:
+        render_logo(138)
+    with nav_col:
+        selected = st.segmented_control(
+            "Navegação",
+            options=list(label_to_internal.keys()),
+            default=selected_label,
+            label_visibility="collapsed",
+            key="top_nav_tabs",
+        )
+    next_page = label_to_internal.get(selected or selected_label, selected_internal)
+    if next_page != selected_internal:
+        go_to_page(next_page)
+        st.rerun()
+    return next_page
 
 
 def render_status_bar(active_sources: int, mode: str, version: str = "v1.3.0", data_window: str = "Últimas 24h") -> None:
-    os_name = platform.system()
-    updated = datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S")
+    updated = datetime.utcnow().strftime("%H:%M")
     status_html = dedent(
         f"""
         <div class='tl-statusbar'>
-            <span><b>Sistema Operacional:</b> {os_name}</span>
-            <span><b>Ambiente:</b> {mode}</span>
-            <span><b>Versão:</b> {version}</span>
-            <span><b>Atualizado em:</b> {updated}</span>
-            <span><b>Janela de dados:</b> {data_window}</span>
-            <span><b>Fontes ativas:</b> {active_sources}</span>
+            <span class='tl-chip tl-chip-ok'>● Operacional</span>
+            <span class='tl-chip'>Ambiente: {mode}</span>
+            <span class='tl-chip'>{version}</span>
+            <span class='tl-chip'>Atualizado: {updated}</span>
+            <span class='tl-chip'>{data_window}</span>
+            <span class='tl-chip'>Fontes: {active_sources}</span>
         </div>
         """
     ).strip()
@@ -55,7 +64,7 @@ def render_status_bar(active_sources: int, mode: str, version: str = "v1.3.0", d
 
 
 def render_header(title: str, subtitle: str, icon: str = "🛡️") -> None:
-    st.markdown(f"<div class='tl-banner'><h2>{icon} {title}</h2><p style='margin:0;color:#94a3b8'>{subtitle}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='tl-banner'><h3>{icon} {title}</h3><p>{subtitle}</p></div>", unsafe_allow_html=True)
 
 
 def render_section_title(text: str) -> None:
@@ -63,8 +72,8 @@ def render_section_title(text: str) -> None:
 
 
 def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str = "", risk_level: str | None = None, on_click_key: str | None = None, target_page: str | None = None, filter_type: str | None = None, filter_value: str | int | None = None) -> None:
-    st.markdown(f"<div class='tl-card tl-clickable'><div class='tl-metric'>{icon} {value}</div><div class='tl-label'>{title}</div><div class='tl-mini'>{subtitle}</div></div>", unsafe_allow_html=True)
-    if on_click_key and st.button("Abrir", key=on_click_key, use_container_width=True):
+    label = f"{icon} {value}\n{title}\n{subtitle or 'Ver detalhes →'}"
+    if on_click_key and st.button(label, key=on_click_key, use_container_width=True):
         if target_page:
             go_to_page(target_page)
         if filter_type and filter_value is not None:
@@ -75,6 +84,11 @@ def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str
             elif filter_type == "analysis_id":
                 open_analysis_detail(int(filter_value))
         st.rerun()
+    elif not on_click_key:
+        st.markdown(
+            f"<div class='tl-card'><div class='tl-metric'>{icon} {value}</div><div class='tl-label'>{title}</div><div class='tl-mini'>{subtitle or 'Ver detalhes →'}</div></div>",
+            unsafe_allow_html=True,
+        )
 
 
 def render_risk_badge(risk_level: str, score: int = 0) -> None:

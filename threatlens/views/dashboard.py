@@ -6,18 +6,26 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from database.db import get_all_analyses, get_dashboard_stats, get_latest_analysis, seed_demo_data
-from utils.ui import render_empty_state, render_header, render_metric_card, render_section_title
+from database.db import get_all_analyses, get_dashboard_stats, get_latest_analysis
+from utils.ui import render_empty_state, render_metric_card, render_section_title
 
 
 def render(secrets: dict) -> None:
-    render_header("ThreatLens", "IOC Enrichment & Triage Platform", "🛡️")
+    h1, h2 = st.columns([5, 1], vertical_alignment="center")
+    with h1:
+        st.markdown(
+            "<div class='tl-banner'><h3>ThreatLens</h3><p>IOC Enrichment & Triage Platform</p></div>",
+            unsafe_allow_html=True,
+        )
+    with h2:
+        if st.button("Analisar IOC", type="primary", use_container_width=True):
+            st.session_state["current_page"] = "🔎 Analisar IOC"
+            st.rerun()
 
-    t1, t2 = st.columns([4, 1])
+    t1, t2 = st.columns([6, 1], vertical_alignment="center")
     query = t1.text_input("", placeholder="Buscar IOC, domínio, IP, hash ou caso...", label_visibility="collapsed")
-    if t2.button("Analisar IOC", type="primary"):
-        st.session_state["current_page"] = "🔎 Analisar IOC"
-        st.rerun()
+    if t2.button("Buscar", use_container_width=True):
+        pass
 
     rows = get_all_analyses()
     if query:
@@ -47,20 +55,23 @@ def render(secrets: dict) -> None:
     type_df = pd.DataFrame(list(stats["types"].items()), columns=["Tipo", "Quantidade"])
     status_df = pd.DataFrame(list(stats["status"].items()), columns=["Status", "Quantidade"])
 
-    g1, g2, g3, g4 = st.columns([2, 2, 2, 1])
+    g1, g2, g3, g4 = st.columns([2.1, 2.1, 2.1, 1.7], vertical_alignment="top")
     g1.plotly_chart(px.bar(risk_df, x="Risco", y="Quantidade", color="Risco", title="Distribuição por risco"), use_container_width=True)
     g2.plotly_chart(px.bar(type_df, x="Tipo", y="Quantidade", color="Tipo", title="Distribuição por tipo"), use_container_width=True)
     g3.plotly_chart(px.bar(status_df, x="Status", y="Quantidade", color="Status", title="Distribuição por status"), use_container_width=True)
     with g4:
-        st.markdown("<div class='tl-card'><h4>Saúde das Fontes</h4><p>VirusTotal • AbuseIPDB • URLHaus • IPinfo • OpenAI</p><p>Consulte Configurações para detalhes.</p></div>", unsafe_allow_html=True)
         st.markdown("<div class='tl-card'><h4>Análise Inteligente</h4><p>Gere insights com IA a partir dos dados coletados.</p></div>", unsafe_allow_html=True)
 
-    render_section_title("Análises Recentes")
-    recent = df[["id", "ioc", "ioc_type", "risk_level", "case_status", "updated_at"]].head(10)
-    st.dataframe(recent.rename(columns={"ioc": "IOC", "ioc_type": "Tipo", "risk_level": "Risco", "case_status": "Status", "updated_at": "Analisado em"}), use_container_width=True)
+    lower_left, lower_right = st.columns([3.8, 1.2], vertical_alignment="top")
+    with lower_left:
+        render_section_title("Análises Recentes")
+        recent = df[["id", "ioc", "ioc_type", "risk_level", "case_status", "updated_at"]].head(10)
+        st.dataframe(recent.rename(columns={"ioc": "IOC", "ioc_type": "Tipo", "risk_level": "Risco", "case_status": "Status", "updated_at": "Analisado em"}), use_container_width=True)
 
-    sel = st.selectbox("Abrir análise recente", recent["id"].tolist())
-    if st.button("Ver detalhes da análise selecionada"):
-        st.session_state["selected_analysis_id"] = int(sel)
-        st.session_state["current_page"] = "🧾 Detalhe da Análise"
-        st.rerun()
+        sel = st.selectbox("Abrir análise recente", recent["id"].tolist())
+        if st.button("Ver detalhes da análise selecionada"):
+            st.session_state["selected_analysis_id"] = int(sel)
+            st.session_state["current_page"] = "🧾 Detalhe da Análise"
+            st.rerun()
+    with lower_right:
+        st.markdown("<div class='tl-card'><h4>Saúde das Fontes</h4><p style='margin:.2rem 0'>VirusTotal • AbuseIPDB • URLHaus • IPinfo • OpenAI</p><p class='tl-mini'>Consulte Configurações para detalhes.</p></div>", unsafe_allow_html=True)
