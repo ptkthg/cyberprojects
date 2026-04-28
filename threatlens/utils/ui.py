@@ -22,46 +22,31 @@ def render_logo(width: int = 190) -> None:
 
 
 def render_top_navigation(options: list[str], current: str) -> str:
-    clean_options = []
+    visible_options = []
     for option in options:
         normalized = normalize_page_name(option, fallback="")
-        if normalized and normalized not in clean_options:
-            clean_options.append(normalized)
-    visible_options = [option for option in clean_options if option in VALID_PAGES]
+        if normalized in VALID_PAGES and normalized not in visible_options:
+            visible_options.append(normalized)
     if not visible_options:
         visible_options = VALID_PAGES.copy()
 
     selected_internal = normalize_page_name(current, fallback="Painel")
     if selected_internal not in visible_options:
         selected_internal = "Painel"
-        st.session_state["current_page"] = selected_internal
-    icon_map = {
-        "Painel": "◈",
-        "Analisar IOC": "⌕",
-        "Análise em Lote": "☰",
-        "Histórico": "◷",
-        "Casos": "◉",
-        "Configurações": "⚙",
-        "Sobre": "ⓘ",
-    }
-    display_labels = [f"{icon_map.get(label, '•')}  {label}" for label in visible_options]
-    label_to_internal = dict(zip(display_labels, visible_options))
-    selected_label = f"{icon_map.get(selected_internal, '•')}  {selected_internal}"
-    if selected_label not in display_labels:
-        selected_label = display_labels[0]
+        st.session_state["current_page"] = "Painel"
 
-    logo_col, nav_col = st.columns([1.3, 8.7], vertical_alignment="center")
+    logo_col, nav_col = st.columns([1.1, 8.9], vertical_alignment="center")
     with logo_col:
-        render_logo(138)
+        render_logo(142)
     with nav_col:
         selected = st.segmented_control(
             "Navegação",
-            options=display_labels,
-            default=selected_label,
+            options=visible_options,
+            default=selected_internal,
             label_visibility="collapsed",
             key="top_nav_tabs",
         )
-    next_page = label_to_internal.get(selected or selected_label, "Painel")
+    next_page = normalize_page_name(selected, fallback="Painel")
     if next_page != selected_internal:
         go_to_page(next_page)
         st.rerun()
@@ -115,7 +100,8 @@ def render_search_bar(placeholder: str = "🔎  Buscar IOC, domínio, IP, hash o
 
 
 def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str = "", risk_level: str | None = None, on_click_key: str | None = None, target_page: str | None = None, filter_type: str | None = None, filter_value: str | int | None = None) -> None:
-    label = f"{icon}  {value}\n{title}\n{subtitle or 'Ver detalhes →'}"
+    action = subtitle or "Ver detalhes →"
+    label = f"{icon}  {value}\n{title}\n{action}"
     if on_click_key and st.button(label, key=on_click_key, use_container_width=True):
         if target_page:
             go_to_page(target_page)
@@ -129,7 +115,7 @@ def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str
         st.rerun()
     elif not on_click_key:
         st.markdown(
-            f"<div class='tl-card'><div class='tl-metric'>{icon} {value}</div><div class='tl-label'>{title}</div><div class='tl-mini'>{subtitle or 'Ver detalhes →'}</div></div>",
+            f"<div class='tl-card'><div class='tl-metric'>{icon} {value}</div><div class='tl-label'>{title}</div><div class='tl-mini'>{action}</div></div>",
             unsafe_allow_html=True,
         )
 

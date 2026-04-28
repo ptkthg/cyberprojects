@@ -20,12 +20,12 @@ def apply_dark_chart_layout(fig: go.Figure, title: str | None = None) -> go.Figu
     if title:
         fig.update_layout(title={"text": title, "x": 0, "font": {"size": 18}})
     fig.update_layout(
-        paper_bgcolor="rgba(11,18,32,0)",
-        plot_bgcolor="rgba(11,18,32,0)",
+        paper_bgcolor="#0b1220",
+        plot_bgcolor="#0b1220",
         font={"color": "#cbd5e1", "family": "Inter, sans-serif"},
         margin={"l": 18, "r": 18, "t": 42, "b": 26},
-        legend={"bgcolor": "rgba(11,18,32,0.25)", "borderwidth": 0, "orientation": "v"},
-        hoverlabel={"bgcolor": "#0b1220", "font_color": "#e2e8f0", "bordercolor": "#334155"},
+        legend={"bgcolor": "rgba(11,18,32,0.7)", "borderwidth": 0, "orientation": "v"},
+        hoverlabel={"bgcolor": "#111827", "font_color": "#e2e8f0", "bordercolor": "#334155"},
     )
     fig.update_xaxes(showgrid=False, color="#94a3b8")
     fig.update_yaxes(showgrid=True, gridcolor="rgba(148,163,184,0.15)", color="#94a3b8")
