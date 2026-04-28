@@ -53,6 +53,9 @@ def status_distribution_chart(status_df: pd.DataFrame) -> go.Figure:
 
 
 # Backward-compatible aliases.
+build_risk_chart = risk_distribution_chart
+build_ioc_type_chart = ioc_type_distribution_chart
+build_status_chart = status_distribution_chart
 risk_donut = risk_distribution_chart
 type_bar = ioc_type_distribution_chart
 status_donut = status_distribution_chart

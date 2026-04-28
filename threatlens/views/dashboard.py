@@ -7,8 +7,8 @@ import streamlit as st
 
 from database.db import get_all_analyses, get_dashboard_stats, get_latest_analysis
 from services.openai_analysis import generate_ai_ioc_analysis
-from utils.charts import ioc_type_distribution_chart, risk_distribution_chart, status_distribution_chart
-from utils.ui import render_ai_panel, render_empty_state, render_kpi_card, render_page_header, render_recent_analysis_table, render_search_bar, render_source_health_panel
+from utils.charts import build_ioc_type_chart, build_risk_chart, build_status_chart
+from utils.ui import render_ai_card, render_dashboard_header, render_empty_state, render_kpi_grid, render_recent_table, render_search_area, render_source_health_card
 
 
 def _safe_source_name(row: dict) -> str:
@@ -59,15 +59,15 @@ def _render_recent_table(rows: list[dict]) -> None:
         )
 
     html.append("</tbody></table><div class='tl-chart-link'>Ver todas as análises →</div></div>")
-    render_recent_analysis_table("".join(html))
+    render_recent_table("".join(html))
 
 
 def render(secrets: dict) -> None:
-    if render_page_header("ThreatLens", "IOC Enrichment & Triage Platform", "Analisar IOC"):
+    if render_dashboard_header():
         st.session_state["current_page"] = "Analisar IOC"
         st.rerun()
 
-    query, _ = render_search_bar(key_prefix="dash")
+    query, _ = render_search_area()
 
     rows = get_all_analyses()
     if query:
@@ -80,25 +80,18 @@ def render(secrets: dict) -> None:
     latest = get_latest_analysis()
     latest_id = latest["id"] if latest else 0
 
-    cards = st.columns(4)
-    with cards[0]:
-        render_kpi_card("Total de IOCs", str(stats["total"]), "📄", "Ver lista completa →", on_click_key="card_total", target_page="Histórico")
-    with cards[1]:
-        render_kpi_card("Casos abertos", str(stats["open_cases"]), "📁", "Ir para casos →", on_click_key="card_open", target_page="Casos", filter_type="case_status", filter_value="Novo")
-    with cards[2]:
-        render_kpi_card("Risco crítico", str(stats["risk"].get("Crítico", 0)), "🚨", "Filtrar histórico →", on_click_key="card_crit", target_page="Histórico", filter_type="history_risk", filter_value="Crítico")
-    with cards[3]:
-        render_kpi_card("Risco alto", str(stats["risk"].get("Alto", 0)), "⚠️", "Filtrar histórico →", on_click_key="card_high", target_page="Histórico", filter_type="history_risk", filter_value="Alto")
-
-    cards2 = st.columns(4)
-    with cards2[0]:
-        render_kpi_card("Risco médio", str(stats["risk"].get("Médio", 0)), "🟠", "Filtrar histórico →", on_click_key="card_med", target_page="Histórico", filter_type="history_risk", filter_value="Médio")
-    with cards2[1]:
-        render_kpi_card("Risco baixo", str(stats["risk"].get("Baixo", 0)), "🟢", "Filtrar histórico →", on_click_key="card_low", target_page="Histórico", filter_type="history_risk", filter_value="Baixo")
-    with cards2[2]:
-        render_kpi_card("Fontes ativas", str(stats["active_sources"]), "🛞", "Saúde das fontes →", on_click_key="card_sources", target_page="Configurações")
-    with cards2[3]:
-        render_kpi_card("Última análise", stats["last_analysis"], "🕒", "Abrir detalhe →", on_click_key="card_latest", target_page="Detalhe da Análise", filter_type="analysis_id", filter_value=latest_id)
+    render_kpi_grid(
+        [
+            {"title": "Total de IOCs", "value": stats["total"], "icon": "📄", "action": "Ver lista completa →", "key": "card_total", "target_page": "Histórico"},
+            {"title": "Casos abertos", "value": stats["open_cases"], "icon": "📁", "action": "Ir para casos →", "key": "card_open", "target_page": "Casos", "filter_type": "case_status", "filter_value": "Novo"},
+            {"title": "Risco crítico", "value": stats["risk"].get("Crítico", 0), "icon": "🚨", "action": "Filtrar histórico →", "key": "card_crit", "target_page": "Histórico", "filter_type": "history_risk", "filter_value": "Crítico"},
+            {"title": "Risco alto", "value": stats["risk"].get("Alto", 0), "icon": "⚠️", "action": "Filtrar histórico →", "key": "card_high", "target_page": "Histórico", "filter_type": "history_risk", "filter_value": "Alto"},
+            {"title": "Risco médio", "value": stats["risk"].get("Médio", 0), "icon": "🟠", "action": "Filtrar histórico →", "key": "card_med", "target_page": "Histórico", "filter_type": "history_risk", "filter_value": "Médio"},
+            {"title": "Risco baixo", "value": stats["risk"].get("Baixo", 0), "icon": "🟢", "action": "Filtrar histórico →", "key": "card_low", "target_page": "Histórico", "filter_type": "history_risk", "filter_value": "Baixo"},
+            {"title": "Fontes ativas", "value": stats["active_sources"], "icon": "🛞", "action": "Saúde das fontes →", "key": "card_sources", "target_page": "Configurações"},
+            {"title": "Última análise", "value": stats["last_analysis"], "icon": "🕒", "action": "Abrir detalhe →", "key": "card_latest", "target_page": "Detalhe da Análise", "filter_type": "analysis_id", "filter_value": latest_id},
+        ]
+    )
 
     risk_df = pd.DataFrame(list(stats["risk"].items()), columns=["Risco", "Quantidade"])
     type_df = pd.DataFrame(list(stats["types"].items()), columns=["Tipo", "Quantidade"])
@@ -107,19 +100,19 @@ def render(secrets: dict) -> None:
     ch1, ch2, ch3, ai_col = st.columns([2.1, 2.1, 2.1, 1.7], vertical_alignment="top")
     with ch1:
         st.markdown("<div class='tl-chart-card'><div class='tl-chart-title'>Distribuição por risco</div>", unsafe_allow_html=True)
-        st.plotly_chart(risk_distribution_chart(risk_df), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(build_risk_chart(risk_df), use_container_width=True, config={"displayModeBar": False})
         st.markdown("<div class='tl-chart-link'>Ver detalhes →</div></div>", unsafe_allow_html=True)
     with ch2:
         st.markdown("<div class='tl-chart-card'><div class='tl-chart-title'>Distribuição por tipo de IOC</div>", unsafe_allow_html=True)
-        st.plotly_chart(ioc_type_distribution_chart(type_df), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(build_ioc_type_chart(type_df), use_container_width=True, config={"displayModeBar": False})
         st.markdown("<div class='tl-chart-link'>Ver detalhes →</div></div>", unsafe_allow_html=True)
     with ch3:
         st.markdown("<div class='tl-chart-card'><div class='tl-chart-title'>Distribuição por status</div>", unsafe_allow_html=True)
-        st.plotly_chart(status_distribution_chart(status_df), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(build_status_chart(status_df), use_container_width=True, config={"displayModeBar": False})
         st.markdown("<div class='tl-chart-link'>Ver detalhes →</div></div>", unsafe_allow_html=True)
 
     with ai_col:
-        render_ai_panel()
+        render_ai_card()
         if st.button("Gerar análise IA", type="primary", use_container_width=True, key="dash_ai"):
             if not secrets.get("OPENAI_API_KEY"):
                 st.warning("OPENAI_API_KEY não configurada. Configure em Configurações.")
@@ -154,4 +147,4 @@ def render(secrets: dict) -> None:
             st.session_state["current_page"] = "Detalhe da Análise"
             st.rerun()
     with lower_right:
-        render_source_health_panel([(s, "Operacional") for s in ["VirusTotal", "AbuseIPDB", "URLHaus", "IPinfo", "OpenAI"]])
+        render_source_health_card([(s, "Operacional") for s in ["VirusTotal", "AbuseIPDB", "URLHaus", "IPinfo", "OpenAI"]])

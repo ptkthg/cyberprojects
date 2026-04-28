@@ -57,6 +57,12 @@ def render_topbar(options: list[str], current: str) -> str:
     return render_top_navigation(options, current)
 
 
+def render_app_shell(options: list[str], current: str, active_sources: int, mode: str, version: str = "v1.3.0") -> str:
+    selected = render_topbar(options, current)
+    render_statusbar(active_sources, mode, version=version)
+    return selected
+
+
 def render_status_bar(active_sources: int, mode: str, version: str = "v1.3.0", data_window: str = "Últimas 24h") -> None:
     updated = datetime.utcnow().strftime("%H:%M")
     status_html = dedent(
@@ -94,11 +100,19 @@ def render_page_header(title: str, subtitle: str, button_label: str | None = "An
     return False
 
 
+def render_dashboard_header() -> bool:
+    return render_page_header("ThreatLens", "IOC Enrichment & Triage Platform", "Analisar IOC")
+
+
 def render_search_bar(placeholder: str = "🔎  Buscar IOC, domínio, IP, hash ou caso...", button_label: str = "Buscar", key_prefix: str = "main") -> tuple[str, bool]:
     c1, c2 = st.columns([8, 1], vertical_alignment="center")
     query = c1.text_input("", placeholder=placeholder, label_visibility="collapsed", key=f"{key_prefix}_search")
     clicked = c2.button(button_label, use_container_width=True, key=f"{key_prefix}_search_btn")
     return query, clicked
+
+
+def render_search_area() -> tuple[str, bool]:
+    return render_search_bar("Buscar IOC, domínio, IP, hash ou caso...", "Buscar", "dash")
 
 
 def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str = "", risk_level: str | None = None, on_click_key: str | None = None, target_page: str | None = None, filter_type: str | None = None, filter_value: str | int | None = None) -> None:
@@ -124,6 +138,23 @@ def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str
 
 def render_kpi_card(title: str, value: str, icon: str = "📌", subtitle: str = "", on_click_key: str | None = None, target_page: str | None = None, filter_type: str | None = None, filter_value: str | int | None = None) -> None:
     render_metric_card(title, value, icon, subtitle, on_click_key=on_click_key, target_page=target_page, filter_type=filter_type, filter_value=filter_value)
+
+
+def render_kpi_grid(items: list[dict]) -> None:
+    for start in range(0, len(items), 4):
+        cols = st.columns(4)
+        for col, card in zip(cols, items[start : start + 4]):
+            with col:
+                render_kpi_card(
+                    card["title"],
+                    str(card["value"]),
+                    card.get("icon", "📌"),
+                    card.get("action", "Ver detalhes →"),
+                    on_click_key=card.get("key"),
+                    target_page=card.get("target_page"),
+                    filter_type=card.get("filter_type"),
+                    filter_value=card.get("filter_value"),
+                )
 
 
 def render_risk_badge(risk_level: str, score: int = 0) -> None:
@@ -165,6 +196,10 @@ def render_ai_panel() -> None:
     st.markdown("<div class='tl-mini-card'><div class='tl-chart-title'>Análise Inteligente</div><h4 style='text-align:center;color:#38bdf8'>AI</h4><p style='text-align:center'>Gere insights com IA a partir dos dados coletados.</p></div>", unsafe_allow_html=True)
 
 
+def render_ai_card() -> None:
+    render_ai_panel()
+
+
 def render_source_health_panel(sources: list[tuple[str, str]]) -> None:
     rows = ["<div class='tl-mini-card'><div class='tl-chart-title'>Saúde das fontes</div><div class='tl-sources-list'>"]
     for source, status in sources:
@@ -175,8 +210,16 @@ def render_source_health_panel(sources: list[tuple[str, str]]) -> None:
     st.markdown("".join(rows), unsafe_allow_html=True)
 
 
+def render_source_health_card(sources: list[tuple[str, str]]) -> None:
+    render_source_health_panel(sources)
+
+
 def render_recent_analysis_table(html_table: str) -> None:
     st.markdown(html_table, unsafe_allow_html=True)
+
+
+def render_recent_table(html_table: str) -> None:
+    render_recent_analysis_table(html_table)
 
 
 def render_social_links() -> None:

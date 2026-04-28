@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from core.navigation import DETAIL_PAGE, VALID_PAGES, normalize_page_name
 from database.db import get_dashboard_stats, init_db
 from utils.styles import apply_global_styles
-from utils.ui import render_footer, render_status_bar, render_top_navigation
+from utils.ui import render_app_shell, render_footer
 from views import about, analysis_detail, analyze, batch, cases, dashboard, history, settings
 
 load_dotenv()
@@ -45,12 +45,10 @@ def main() -> None:
     else:
         nav_options = PAGES
 
-    selected = render_top_navigation(nav_options, current)
-    st.session_state["current_page"] = selected
-
     stats = get_dashboard_stats()
     mode = "Demo" if stats.get("total", 0) and "TL-DEMO" in (str(st.session_state.get("selected_analysis_id", ""))) else "Produção"
-    render_status_bar(stats.get("active_sources", 0), mode)
+    selected = render_app_shell(nav_options, current, stats.get("active_sources", 0), mode)
+    st.session_state["current_page"] = selected
 
     if selected == "Painel":
         dashboard.render(secrets)
