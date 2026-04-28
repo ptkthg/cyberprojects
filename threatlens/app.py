@@ -47,7 +47,7 @@ def main() -> None:
     st.session_state["current_page"] = selected
 
     stats = get_dashboard_stats()
-    mode = "Demo" if stats.get("total", 0) and "TL-DEMO" in (str(st.session_state.get("selected_analysis_id", ""))) else "Produção local"
+    mode = "Demo" if stats.get("total", 0) and "TL-DEMO" in (str(st.session_state.get("selected_analysis_id", ""))) else "Produção"
     render_status_bar(stats.get("active_sources", 0), mode)
 
     if selected == "📊 Painel":

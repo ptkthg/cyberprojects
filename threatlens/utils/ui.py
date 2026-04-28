@@ -25,8 +25,19 @@ def render_logo(width: int = 190) -> None:
 def render_top_navigation(options: list[str], current: str) -> str:
     visible_options = options[:]
     selected_internal = current if current in visible_options else visible_options[0]
-    label_to_internal = {re.sub(r"^[^\wÀ-ÿ]+ ?", "", opt): opt for opt in visible_options}
-    selected_label = re.sub(r"^[^\wÀ-ÿ]+ ?", "", selected_internal)
+    icon_map = {
+        "Painel": "◈",
+        "Analisar IOC": "⌕",
+        "Análise em Lote": "☰",
+        "Histórico": "◷",
+        "Casos": "◉",
+        "Configurações": "⚙",
+        "Sobre": "ⓘ",
+    }
+    clean_labels = [re.sub(r"^[^\wÀ-ÿ]+ ?", "", opt) for opt in visible_options]
+    display_labels = [f"{icon_map.get(label, '•')}  {label}" for label in clean_labels]
+    label_to_internal = dict(zip(display_labels, visible_options))
+    selected_label = f"{icon_map.get(re.sub(r'^[^\\wÀ-ÿ]+ ?', '', selected_internal), '•')}  {re.sub(r'^[^\\wÀ-ÿ]+ ?', '', selected_internal)}"
 
     logo_col, nav_col = st.columns([1.3, 8.7], vertical_alignment="center")
     with logo_col:
@@ -34,7 +45,7 @@ def render_top_navigation(options: list[str], current: str) -> str:
     with nav_col:
         selected = st.segmented_control(
             "Navegação",
-            options=list(label_to_internal.keys()),
+            options=display_labels,
             default=selected_label,
             label_visibility="collapsed",
             key="top_nav_tabs",
@@ -72,7 +83,7 @@ def render_section_title(text: str) -> None:
 
 
 def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str = "", risk_level: str | None = None, on_click_key: str | None = None, target_page: str | None = None, filter_type: str | None = None, filter_value: str | int | None = None) -> None:
-    label = f"{icon} {value}\n{title}\n{subtitle or 'Ver detalhes →'}"
+    label = f"{icon}  {value}\n{title}\n{subtitle or 'Ver detalhes →'}"
     if on_click_key and st.button(label, key=on_click_key, use_container_width=True):
         if target_page:
             go_to_page(target_page)
@@ -122,7 +133,7 @@ def render_social_links() -> None:
 
 
 def render_footer() -> None:
-    st.markdown("<div class='tl-footer'>Desenvolvido por Patrick Santos</div>", unsafe_allow_html=True)
+    st.markdown("<div class='tl-footer'>Desenvolvido por <b>Patrick Santos</b></div>", unsafe_allow_html=True)
 
 
 metric_card = render_metric_card
