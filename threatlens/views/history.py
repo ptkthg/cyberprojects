@@ -64,9 +64,9 @@ def render(secrets: dict) -> None:
                 if r.button("Ver análise", key=f"hist_{row['id']}"):
                     open_analysis_detail(int(row["id"])); st.rerun()
                 if r.button("Reanalisar", key=f"rean_{row['id']}"):
-                    st.session_state["reanalyze_ioc"] = row["ioc"]; st.session_state["current_page"] = "🔎 Analisar IOC"; st.rerun()
+                    st.session_state["reanalyze_ioc"] = row["ioc"]; st.session_state["current_page"] = "Analisar IOC"; st.rerun()
                 if r.button("Abrir caso", key=f"case_{row['id']}"):
-                    st.session_state["current_page"] = "📁 Casos"; st.session_state["case_filter_search"] = row["case_id"]; st.rerun()
+                    st.session_state["current_page"] = "Casos"; st.session_state["case_filter_search"] = row["case_id"]; st.rerun()
 
         st.download_button("Exportar histórico CSV", data=to_csv_bytes(flt.to_dict(orient="records")), file_name="historico.csv", mime="text/csv")
 

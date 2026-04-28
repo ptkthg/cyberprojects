@@ -5,6 +5,7 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
+from core.navigation import DETAIL_PAGE, VALID_PAGES, normalize_page_name
 from database.db import get_dashboard_stats, init_db
 from utils.styles import apply_global_styles
 from utils.ui import render_footer, render_status_bar, render_top_navigation
@@ -12,7 +13,7 @@ from views import about, analysis_detail, analyze, batch, cases, dashboard, hist
 
 load_dotenv()
 
-PAGES = ["📊 Painel", "🔎 Analisar IOC", "📥 Análise em Lote", "🕒 Histórico", "📁 Casos", "⚙️ Configurações", "ℹ️ Sobre"]
+PAGES = VALID_PAGES
 
 
 def load_secrets() -> dict:
@@ -37,9 +38,10 @@ def main() -> None:
     init_db()
     secrets = load_secrets()
 
-    current = st.session_state.get("current_page", "📊 Painel")
-    if current == "🧾 Detalhe da Análise" and st.session_state.get("selected_analysis_id"):
-        nav_options = PAGES + ["🧾 Detalhe da Análise"]
+    current = normalize_page_name(st.session_state.get("current_page"), fallback="Painel")
+    st.session_state["current_page"] = current
+    if current == DETAIL_PAGE and st.session_state.get("selected_analysis_id"):
+        nav_options = PAGES + [DETAIL_PAGE]
     else:
         nav_options = PAGES
 
@@ -50,19 +52,19 @@ def main() -> None:
     mode = "Demo" if stats.get("total", 0) and "TL-DEMO" in (str(st.session_state.get("selected_analysis_id", ""))) else "Produção"
     render_status_bar(stats.get("active_sources", 0), mode)
 
-    if selected == "📊 Painel":
+    if selected == "Painel":
         dashboard.render(secrets)
-    elif selected == "🔎 Analisar IOC":
+    elif selected == "Analisar IOC":
         analyze.render(secrets)
-    elif selected == "📥 Análise em Lote":
+    elif selected == "Análise em Lote":
         batch.render(secrets)
-    elif selected == "🕒 Histórico":
+    elif selected == "Histórico":
         history.render(secrets)
-    elif selected == "📁 Casos":
+    elif selected == "Casos":
         cases.render(secrets)
-    elif selected == "⚙️ Configurações":
+    elif selected == "Configurações":
         settings.render(secrets)
-    elif selected == "🧾 Detalhe da Análise":
+    elif selected == DETAIL_PAGE:
         analysis_detail.render(secrets)
     else:
         about.render(secrets)

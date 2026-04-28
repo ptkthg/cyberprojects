@@ -61,6 +61,6 @@ def render(secrets: dict) -> None:
     c2.download_button("Exportar relatório", data=json.dumps(row, ensure_ascii=False, indent=2).encode("utf-8"), file_name=f"detail_{row['case_id']}.json", mime="application/json")
     c3.text_area("Copiar KQL", rerun["kql"], height=100)
     if c4.button("Abrir caso"):
-        st.session_state["current_page"] = "📁 Casos"; st.rerun()
+        st.session_state["current_page"] = "Casos"; st.rerun()
     if c5.button("Reanalisar"):
         new = analyze_ioc(row["ioc"], secrets); new_id = save_analysis(new, as_case=True); st.session_state["selected_analysis_id"] = new_id; st.success("Reanálise concluída e salva."); st.rerun()

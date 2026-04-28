@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-import re
 from textwrap import dedent
 
 import streamlit as st
 
-from core.navigation import go_to_page, open_analysis_detail, set_case_filter, set_history_filter
+from core.navigation import VALID_PAGES, go_to_page, normalize_page_name, open_analysis_detail, set_case_filter, set_history_filter
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 ASSETS_DIR = BASE_DIR / "assets"
@@ -23,8 +22,19 @@ def render_logo(width: int = 190) -> None:
 
 
 def render_top_navigation(options: list[str], current: str) -> str:
-    visible_options = options[:]
-    selected_internal = current if current in visible_options else visible_options[0]
+    clean_options = []
+    for option in options:
+        normalized = normalize_page_name(option, fallback="")
+        if normalized and normalized not in clean_options:
+            clean_options.append(normalized)
+    visible_options = [option for option in clean_options if option in VALID_PAGES]
+    if not visible_options:
+        visible_options = VALID_PAGES.copy()
+
+    selected_internal = normalize_page_name(current, fallback="Painel")
+    if selected_internal not in visible_options:
+        selected_internal = "Painel"
+        st.session_state["current_page"] = selected_internal
     icon_map = {
         "Painel": "◈",
         "Analisar IOC": "⌕",
@@ -34,10 +44,11 @@ def render_top_navigation(options: list[str], current: str) -> str:
         "Configurações": "⚙",
         "Sobre": "ⓘ",
     }
-    clean_labels = [re.sub(r"^[^\wÀ-ÿ]+ ?", "", opt) for opt in visible_options]
-    display_labels = [f"{icon_map.get(label, '•')}  {label}" for label in clean_labels]
+    display_labels = [f"{icon_map.get(label, '•')}  {label}" for label in visible_options]
     label_to_internal = dict(zip(display_labels, visible_options))
-    selected_label = f"{icon_map.get(re.sub(r'^[^\\wÀ-ÿ]+ ?', '', selected_internal), '•')}  {re.sub(r'^[^\\wÀ-ÿ]+ ?', '', selected_internal)}"
+    selected_label = f"{icon_map.get(selected_internal, '•')}  {selected_internal}"
+    if selected_label not in display_labels:
+        selected_label = display_labels[0]
 
     logo_col, nav_col = st.columns([1.3, 8.7], vertical_alignment="center")
     with logo_col:
@@ -50,7 +61,7 @@ def render_top_navigation(options: list[str], current: str) -> str:
             label_visibility="collapsed",
             key="top_nav_tabs",
         )
-    next_page = label_to_internal.get(selected or selected_label, selected_internal)
+    next_page = label_to_internal.get(selected or selected_label, "Painel")
     if next_page != selected_internal:
         go_to_page(next_page)
         st.rerun()

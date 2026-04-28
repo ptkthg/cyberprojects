@@ -79,7 +79,7 @@ def render(secrets: dict) -> None:
         st.markdown("<div class='tl-banner'><h3>ThreatLens</h3><p>IOC Enrichment & Triage Platform</p></div>", unsafe_allow_html=True)
     with header_right:
         if st.button("Analisar IOC", type="primary", use_container_width=True, key="dash_cta"):
-            st.session_state["current_page"] = "🔎 Analisar IOC"
+            st.session_state["current_page"] = "Analisar IOC"
             st.rerun()
 
     search_col, button_col = st.columns([8, 1], vertical_alignment="center")
@@ -99,23 +99,23 @@ def render(secrets: dict) -> None:
 
     cards = st.columns(4)
     with cards[0]:
-        render_metric_card("Total de IOCs", str(stats["total"]), "📄", "Ver lista completa →", on_click_key="card_total", target_page="🕒 Histórico")
+        render_metric_card("Total de IOCs", str(stats["total"]), "📄", "Ver lista completa →", on_click_key="card_total", target_page="Histórico")
     with cards[1]:
-        render_metric_card("Casos abertos", str(stats["open_cases"]), "📁", "Ir para casos →", on_click_key="card_open", target_page="📁 Casos", filter_type="case_status", filter_value="Novo")
+        render_metric_card("Casos abertos", str(stats["open_cases"]), "📁", "Ir para casos →", on_click_key="card_open", target_page="Casos", filter_type="case_status", filter_value="Novo")
     with cards[2]:
-        render_metric_card("Risco crítico", str(stats["risk"].get("Crítico", 0)), "🚨", "Filtrar histórico →", on_click_key="card_crit", target_page="🕒 Histórico", filter_type="history_risk", filter_value="Crítico")
+        render_metric_card("Risco crítico", str(stats["risk"].get("Crítico", 0)), "🚨", "Filtrar histórico →", on_click_key="card_crit", target_page="Histórico", filter_type="history_risk", filter_value="Crítico")
     with cards[3]:
-        render_metric_card("Risco alto", str(stats["risk"].get("Alto", 0)), "⚠️", "Filtrar histórico →", on_click_key="card_high", target_page="🕒 Histórico", filter_type="history_risk", filter_value="Alto")
+        render_metric_card("Risco alto", str(stats["risk"].get("Alto", 0)), "⚠️", "Filtrar histórico →", on_click_key="card_high", target_page="Histórico", filter_type="history_risk", filter_value="Alto")
 
     cards2 = st.columns(4)
     with cards2[0]:
-        render_metric_card("Risco médio", str(stats["risk"].get("Médio", 0)), "🟠", "Filtrar histórico →", on_click_key="card_med", target_page="🕒 Histórico", filter_type="history_risk", filter_value="Médio")
+        render_metric_card("Risco médio", str(stats["risk"].get("Médio", 0)), "🟠", "Filtrar histórico →", on_click_key="card_med", target_page="Histórico", filter_type="history_risk", filter_value="Médio")
     with cards2[1]:
-        render_metric_card("Risco baixo", str(stats["risk"].get("Baixo", 0)), "🟢", "Filtrar histórico →", on_click_key="card_low", target_page="🕒 Histórico", filter_type="history_risk", filter_value="Baixo")
+        render_metric_card("Risco baixo", str(stats["risk"].get("Baixo", 0)), "🟢", "Filtrar histórico →", on_click_key="card_low", target_page="Histórico", filter_type="history_risk", filter_value="Baixo")
     with cards2[2]:
-        render_metric_card("Fontes ativas", str(stats["active_sources"]), "🛞", "Saúde das fontes →", on_click_key="card_sources", target_page="⚙️ Configurações")
+        render_metric_card("Fontes ativas", str(stats["active_sources"]), "🛞", "Saúde das fontes →", on_click_key="card_sources", target_page="Configurações")
     with cards2[3]:
-        render_metric_card("Última análise", stats["last_analysis"], "🕒", "Abrir detalhe →", on_click_key="card_latest", target_page="🧾 Detalhe da Análise", filter_type="analysis_id", filter_value=latest_id)
+        render_metric_card("Última análise", stats["last_analysis"], "🕒", "Abrir detalhe →", on_click_key="card_latest", target_page="Detalhe da Análise", filter_type="analysis_id", filter_value=latest_id)
 
     risk_df = pd.DataFrame(list(stats["risk"].items()), columns=["Risco", "Quantidade"])
     type_df = pd.DataFrame(list(stats["types"].items()), columns=["Tipo", "Quantidade"])
@@ -170,7 +170,7 @@ def render(secrets: dict) -> None:
         sel = st.selectbox("Abrir análise recente", [r["id"] for r in rows[:15]])
         if st.button("Abrir detalhe da análise selecionada", key="open_recent"):
             st.session_state["selected_analysis_id"] = int(sel)
-            st.session_state["current_page"] = "🧾 Detalhe da Análise"
+            st.session_state["current_page"] = "Detalhe da Análise"
             st.rerun()
     with lower_right:
         _render_sources_panel()
