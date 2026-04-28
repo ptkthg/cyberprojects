@@ -1,0 +1,20 @@
+services:
+  backend-go:
+    build: ./backend-go
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DB_PATH=/data/threatlens-go.db
+    volumes:
+      - backend_data:/data
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE=http://localhost:8080/api
+    depends_on:
+      - backend-go
+volumes:
+  backend_data:
