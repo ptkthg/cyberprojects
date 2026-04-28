@@ -68,6 +68,10 @@ def render_top_navigation(options: list[str], current: str) -> str:
     return next_page
 
 
+def render_topbar(options: list[str], current: str) -> str:
+    return render_top_navigation(options, current)
+
+
 def render_status_bar(active_sources: int, mode: str, version: str = "v1.3.0", data_window: str = "Últimas 24h") -> None:
     updated = datetime.utcnow().strftime("%H:%M")
     status_html = dedent(
@@ -85,12 +89,29 @@ def render_status_bar(active_sources: int, mode: str, version: str = "v1.3.0", d
     st.markdown(status_html, unsafe_allow_html=True)
 
 
+def render_statusbar(active_sources: int, mode: str, version: str = "v1.3.0", data_window: str = "Últimas 24h") -> None:
+    render_status_bar(active_sources, mode, version, data_window)
+
+
 def render_header(title: str, subtitle: str, icon: str = "🛡️") -> None:
     st.markdown(f"<div class='tl-banner'><h3>{icon} {title}</h3><p>{subtitle}</p></div>", unsafe_allow_html=True)
 
 
 def render_section_title(text: str) -> None:
     st.markdown(f"### {text}")
+
+
+def render_page_header(title: str, subtitle: str, button_label: str = "Analisar IOC") -> bool:
+    c1, c2 = st.columns([4.5, 1.3], vertical_alignment="center")
+    c1.markdown(f"<div class='tl-banner'><h3>{title}</h3><p>{subtitle}</p></div>", unsafe_allow_html=True)
+    return c2.button(button_label, type="primary", use_container_width=True, key=f"hdr_{button_label}")
+
+
+def render_search_bar(placeholder: str = "🔎  Buscar IOC, domínio, IP, hash ou caso...", button_label: str = "Buscar", key_prefix: str = "main") -> tuple[str, bool]:
+    c1, c2 = st.columns([8, 1], vertical_alignment="center")
+    query = c1.text_input("", placeholder=placeholder, label_visibility="collapsed", key=f"{key_prefix}_search")
+    clicked = c2.button(button_label, use_container_width=True, key=f"{key_prefix}_search_btn")
+    return query, clicked
 
 
 def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str = "", risk_level: str | None = None, on_click_key: str | None = None, target_page: str | None = None, filter_type: str | None = None, filter_value: str | int | None = None) -> None:
@@ -113,6 +134,10 @@ def render_metric_card(title: str, value: str, icon: str = "📌", subtitle: str
         )
 
 
+def render_kpi_card(title: str, value: str, icon: str = "📌", subtitle: str = "", on_click_key: str | None = None, target_page: str | None = None, filter_type: str | None = None, filter_value: str | int | None = None) -> None:
+    render_metric_card(title, value, icon, subtitle, on_click_key=on_click_key, target_page=target_page, filter_type=filter_type, filter_value=filter_value)
+
+
 def render_risk_badge(risk_level: str, score: int = 0) -> None:
     bg, fg = RISK_STYLES.get(risk_level, ("#334155", "#cbd5e1"))
     st.markdown(f"<span class='tl-badge' style='background:{bg};color:{fg};'>Risco {risk_level} • {score}/100</span>", unsafe_allow_html=True)
@@ -127,6 +152,10 @@ def render_status_badge(status: str) -> None:
     st.markdown(f"<span class='tl-badge' style='background:#0b1220;color:{color};border:1px solid {color};'>Status {status}</span>", unsafe_allow_html=True)
 
 
+def render_badge(text: str, color: str = "#38bdf8") -> str:
+    return f"<span class='tl-pill' style='border-color:{color};color:{color};background:rgba(15,23,42,.65)'>{text}</span>"
+
+
 def recommendation_card(text: str) -> None:
     st.markdown(f"<div class='tl-card'><b>Ações recomendadas</b><p style='margin:.4rem 0'>{text}</p></div>", unsafe_allow_html=True)
 
@@ -137,6 +166,29 @@ def render_empty_state(title: str, message: str) -> None:
     if icon.exists():
         c1.image(str(icon), width=90)
     c2.markdown(f"<div class='tl-card'><h4>{title}</h4><p>{message}</p></div>", unsafe_allow_html=True)
+
+
+def render_chart_panel(title: str, detail_link: str = "Ver detalhes →") -> None:
+    st.markdown(f"<div class='tl-chart-card'><div class='tl-chart-title'>{title}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='tl-chart-link'>{detail_link}</div></div>", unsafe_allow_html=True)
+
+
+def render_ai_panel() -> None:
+    st.markdown("<div class='tl-mini-card'><div class='tl-chart-title'>Análise Inteligente</div><h4 style='text-align:center;color:#38bdf8'>AI</h4><p style='text-align:center'>Gere insights com IA a partir dos dados coletados.</p></div>", unsafe_allow_html=True)
+
+
+def render_source_health_panel(sources: list[tuple[str, str]]) -> None:
+    rows = ["<div class='tl-mini-card'><div class='tl-chart-title'>Saúde das fontes</div><div class='tl-sources-list'>"]
+    for source, status in sources:
+        status_class = "tl-source-ok" if status == "Operacional" else "tl-mini"
+        indicator = "●" if status == "Operacional" else "○"
+        rows.append(f"<div class='tl-source-row'><span>{source}</span><span class='{status_class}'>{status} {indicator}</span></div>")
+    rows.append("</div><div class='tl-chart-link'>Ver todas as fontes →</div></div>")
+    st.markdown("".join(rows), unsafe_allow_html=True)
+
+
+def render_recent_analysis_table(html_table: str) -> None:
+    st.markdown(html_table, unsafe_allow_html=True)
 
 
 def render_social_links() -> None:

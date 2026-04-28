@@ -16,7 +16,9 @@ STATUS_COLORS = {
 }
 
 
-def _apply_dark_theme(fig: go.Figure) -> go.Figure:
+def apply_dark_chart_layout(fig: go.Figure, title: str | None = None) -> go.Figure:
+    if title:
+        fig.update_layout(title={"text": title, "x": 0, "font": {"size": 18}})
     fig.update_layout(
         paper_bgcolor="rgba(11,18,32,0)",
         plot_bgcolor="rgba(11,18,32,0)",
@@ -30,21 +32,27 @@ def _apply_dark_theme(fig: go.Figure) -> go.Figure:
     return fig
 
 
-def risk_donut(risk_df: pd.DataFrame) -> go.Figure:
+def risk_distribution_chart(risk_df: pd.DataFrame) -> go.Figure:
     fig = px.pie(risk_df, names="Risco", values="Quantidade", hole=0.55, color="Risco", color_discrete_map=RISK_COLORS)
     fig.update_traces(textposition="none", sort=False)
-    return _apply_dark_theme(fig)
+    return apply_dark_chart_layout(fig)
 
 
-def type_bar(type_df: pd.DataFrame) -> go.Figure:
+def ioc_type_distribution_chart(type_df: pd.DataFrame) -> go.Figure:
     palette = ["#2563eb", "#6366f1", "#8b5cf6", "#0ea5e9", "#14b8a6", "#22c55e"]
     fig = px.bar(type_df, x="Tipo", y="Quantidade", color="Tipo", color_discrete_sequence=palette)
     fig.update_traces(marker_line_width=0)
     fig.update_layout(showlegend=False)
-    return _apply_dark_theme(fig)
+    return apply_dark_chart_layout(fig)
 
 
-def status_donut(status_df: pd.DataFrame) -> go.Figure:
+def status_distribution_chart(status_df: pd.DataFrame) -> go.Figure:
     fig = px.pie(status_df, names="Status", values="Quantidade", hole=0.55, color="Status", color_discrete_map=STATUS_COLORS)
     fig.update_traces(textposition="none", sort=False)
-    return _apply_dark_theme(fig)
+    return apply_dark_chart_layout(fig)
+
+
+# Backward-compatible aliases.
+risk_donut = risk_distribution_chart
+type_bar = ioc_type_distribution_chart
+status_donut = status_distribution_chart
