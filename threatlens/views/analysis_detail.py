@@ -7,11 +7,11 @@ import streamlit as st
 from core.analyzer import analyze_ioc
 from database.db import get_ai_analysis, get_analysis_by_id, save_ai_analysis, save_analysis
 from services.openai_analysis import generate_ai_ioc_analysis
-from utils.ui import recommendation_card, render_empty_state, render_header, render_risk_badge, render_status_badge
+from utils.ui import recommendation_card, render_empty_state, render_page_header, render_risk_badge, render_status_badge
 
 
 def render(secrets: dict) -> None:
-    render_header("Detalhe da Análise", "Fluxo: Histórico → Reabrir análise → Abrir caso", "🧾")
+    render_page_header("Detalhe da Análise", "Analyst Console • evidências técnicas • recomendações acionáveis", None)
     analysis_id = st.session_state.get("selected_analysis_id")
     if not analysis_id:
         render_empty_state("Nenhuma análise selecionada", "Abra Histórico, Painel ou Casos e clique em Ver análise.")

@@ -86,10 +86,12 @@ def render_section_title(text: str) -> None:
     st.markdown(f"### {text}")
 
 
-def render_page_header(title: str, subtitle: str, button_label: str = "Analisar IOC") -> bool:
+def render_page_header(title: str, subtitle: str, button_label: str | None = "Analisar IOC") -> bool:
     c1, c2 = st.columns([4.5, 1.3], vertical_alignment="center")
     c1.markdown(f"<div class='tl-banner'><h3>{title}</h3><p>{subtitle}</p></div>", unsafe_allow_html=True)
-    return c2.button(button_label, type="primary", use_container_width=True, key=f"hdr_{button_label}")
+    if button_label:
+        return c2.button(button_label, type="primary", use_container_width=True, key=f"hdr_{button_label}")
+    return False
 
 
 def render_search_bar(placeholder: str = "🔎  Buscar IOC, domínio, IP, hash ou caso...", button_label: str = "Buscar", key_prefix: str = "main") -> tuple[str, bool]:

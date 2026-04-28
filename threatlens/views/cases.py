@@ -5,22 +5,23 @@ import streamlit as st
 
 from database.db import DECISION_OPTIONS, STATUS_OPTIONS, get_all_analyses, update_case
 from utils.export import to_csv_bytes
-from utils.ui import render_empty_state, render_header
+from utils.ui import render_empty_state, render_page_header
 
 
 def render(secrets: dict) -> None:
-    render_header("Casos", "Central operacional de triagem e acompanhamento", "📁")
+    render_page_header("Casos", "Case Management Console • triagem e decisão de analista", None)
     df = pd.DataFrame(get_all_analyses())
     if df.empty:
         render_empty_state("Nenhum caso aberto no momento", "Use Analisar IOC para criar o primeiro caso.")
         return
 
-    c1, c2, c3 = st.columns(3)
-    q = c1.text_input("Buscar IOC/Case ID", value=st.session_state.get("case_filter_search", ""))
-    risk_opts=["Todos", "Crítico", "Alto", "Médio", "Baixo"]
-    risk = c2.selectbox("Risco", risk_opts, index=risk_opts.index(st.session_state.get("case_filter_risk", "Todos")) if st.session_state.get("case_filter_risk", "Todos") in risk_opts else 0)
-    st_opts=["Todos"] + STATUS_OPTIONS
-    status = c3.selectbox("Status", st_opts, index=st_opts.index(st.session_state.get("case_filter_status", "Todos")) if st.session_state.get("case_filter_status", "Todos") in st_opts else 0)
+    with st.container(border=True):
+        c1, c2, c3 = st.columns(3)
+        q = c1.text_input("Buscar IOC/Case ID", value=st.session_state.get("case_filter_search", ""))
+        risk_opts=["Todos", "Crítico", "Alto", "Médio", "Baixo"]
+        risk = c2.selectbox("Risco", risk_opts, index=risk_opts.index(st.session_state.get("case_filter_risk", "Todos")) if st.session_state.get("case_filter_risk", "Todos") in risk_opts else 0)
+        st_opts=["Todos"] + STATUS_OPTIONS
+        status = c3.selectbox("Status", st_opts, index=st_opts.index(st.session_state.get("case_filter_status", "Todos")) if st.session_state.get("case_filter_status", "Todos") in st_opts else 0)
 
     flt = df.copy()
     if q:

@@ -8,26 +8,27 @@ import streamlit as st
 from core.navigation import clear_navigation_filters, open_analysis_detail
 from database.db import STATUS_OPTIONS, clear_history, get_all_analyses, get_audit_logs
 from utils.export import to_csv_bytes
-from utils.ui import render_empty_state, render_header, render_risk_badge, render_status_badge
+from utils.ui import render_empty_state, render_page_header, render_risk_badge, render_status_badge
 
 
 def render(secrets: dict) -> None:
-    render_header("Histórico investigativo", "Timeline de análises com filtros e acesso ao detalhe", "🕒")
+    render_page_header("Histórico investigativo", "Case Management Timeline • filtros operacionais • acesso ao detalhe", None)
     rows = get_all_analyses()
     if not rows:
         render_empty_state("Nenhuma análise encontrada", "Execute uma análise de IOC para começar a popular o histórico.")
         return
 
     df = pd.DataFrame(rows)
-    c1, c2, c3, c4, c5 = st.columns(5)
-    q = c1.text_input("Buscar IOC", value=st.session_state.get("history_filter_search_ioc", ""))
-    risk = c2.selectbox("Risco", ["Todos", "Crítico", "Alto", "Médio", "Baixo"], index=["Todos", "Crítico", "Alto", "Médio", "Baixo"].index(st.session_state.get("history_filter_risk", "Todos")))
-    ioc_type = c3.selectbox("Tipo", ["Todos"] + sorted(df["ioc_type"].unique().tolist()), index=0)
-    status_opts = ["Todos"] + STATUS_OPTIONS
-    status_default = st.session_state.get("history_filter_status", "Todos")
-    status_idx = status_opts.index(status_default) if status_default in status_opts else 0
-    status = c4.selectbox("Status", status_opts, index=status_idx)
-    period = c5.selectbox("Período", ["Todos", "7 dias", "30 dias", "90 dias"])
+    with st.container(border=True):
+        c1, c2, c3, c4, c5 = st.columns(5)
+        q = c1.text_input("Buscar IOC", value=st.session_state.get("history_filter_search_ioc", ""))
+        risk = c2.selectbox("Risco", ["Todos", "Crítico", "Alto", "Médio", "Baixo"], index=["Todos", "Crítico", "Alto", "Médio", "Baixo"].index(st.session_state.get("history_filter_risk", "Todos")))
+        ioc_type = c3.selectbox("Tipo", ["Todos"] + sorted(df["ioc_type"].unique().tolist()), index=0)
+        status_opts = ["Todos"] + STATUS_OPTIONS
+        status_default = st.session_state.get("history_filter_status", "Todos")
+        status_idx = status_opts.index(status_default) if status_default in status_opts else 0
+        status = c4.selectbox("Status", status_opts, index=status_idx)
+        period = c5.selectbox("Período", ["Todos", "7 dias", "30 dias", "90 dias"])
 
     flt = df.copy()
     if q:

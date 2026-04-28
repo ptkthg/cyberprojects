@@ -75,6 +75,11 @@ def apply_global_styles() -> None:
             .stTextInput > div > div > input {background:#0b1220 !important;color:#f8fafc !important;border:1px solid rgba(56,189,248,.25) !important;}
             .stTextInput > div > div > input::placeholder {color:#94a3b8 !important;}
             .stTextInput > div > div:focus-within {box-shadow:0 0 0 1px #38bdf8 !important;border-radius:10px;}
+            .stSelectbox [data-baseweb="select"] > div {background:#0b1220 !important;border:1px solid rgba(56,189,248,.25) !important;color:#e2e8f0 !important;}
+            .stSelectbox [data-baseweb="select"] > div:hover {border-color:rgba(56,189,248,.45) !important;}
+            .stTextArea textarea {background:#0b1220 !important;color:#f8fafc !important;border:1px solid rgba(56,189,248,.25) !important;}
+            .stJson {background:#0b1220;border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:4px;}
+            div[data-testid="stVerticalBlockBorderWrapper"] {border:1px solid rgba(56,189,248,.2) !important;border-radius:14px !important;background:linear-gradient(180deg,#111827,#0b1220);}
             .stPlotlyChart {margin-top:-2px;}
             .tl-chart-card {background:linear-gradient(180deg,var(--surface-alt),var(--surface));border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px 12px 6px 12px;min-height:348px;}
             .tl-chart-title {font-size:1.05rem;font-weight:600;color:#f8fafc;margin-bottom:4px;}
